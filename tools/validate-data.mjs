@@ -1,0 +1,11 @@
+import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} from 'node:url';
+import {validateGameData} from '../src/data/loader.js';
+const root=fileURLToPath(new URL('../',import.meta.url));
+const read=n=>JSON.parse(fs.readFileSync(path.join(root,'data',n+'.json'),'utf8'));
+const d={blocks:read('blocks'),items:read('items'),recipes:read('recipes'),mobs:read('mobs'),ruins:read('ruins'),biomes:read('biomes'),audio:read('audio'),lang:{pl:read('lang/pl')}};
+validateGameData(d);
+const lock=JSON.parse(fs.readFileSync(path.join(root,'data/ids.lock'),'utf8'));
+for(const [name,id]of Object.entries(lock))if(d.blocks.ids[name]!==id)throw Error(`Locked block ID ${name} changed from ${id} to ${d.blocks.ids[name]}`);
+for(const name of Object.values(d.audio))if(!fs.existsSync(path.join(root,name)))throw Error('Audio missing: '+name);
+const ids=Object.values(d.blocks.ids);if(Math.max(...ids)>=255)throw Error('No room for new Uint8 block IDs');
+console.log(`DATA_VALID: ${ids.length} blocks, ${Object.keys(d.items).length} items, ${d.recipes.length} recipes, ${Object.keys(d.mobs.enemies).length} mobs, ${Object.keys(d.audio).length} audio clips; IDs locked`);

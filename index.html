@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>NightCraft: Cold Forest — V9</title>
+  <title>NightCraft: Cold Forest — V15</title>
   <meta name="description" content="Rozbudowany przeglądarkowy voxel survival-horror." />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -14,11 +14,13 @@
   <div id="vignette"></div>
   <div id="damageFlash"></div>
   <div id="threatPulse"></div>
+  <canvas id="rainFx" aria-hidden="true"></canvas><div id="scanWave" aria-hidden="true"></div>
+  <div id="blackoutFlash"></div>
   <div id="itemTooltip" class="item-tooltip hidden"></div>
 
   <section id="mainMenu" class="screen active">
     <div class="menu-card">
-      <div class="eyebrow">VOXEL SURVIVAL HORROR · V9</div>
+      <div class="eyebrow">VOXEL SURVIVAL HORROR · V15</div>
       <h1>NIGHTCRAFT <span>COLD FOREST</span></h1>
       <p class="lead">Chłodny, mglisty sandbox w duchu klasycznych voxel-survivalów: dzikie biomy, jaskinie i opuszczone szyby, zwierzęta, nocne drapieżniki, pełny ekwipunek i cięższy klimat po zmroku.</p>
       <label class="field">Seed świata<input id="seedInput" maxlength="32" placeholder="np. foggy-pines-199" /></label>
@@ -33,7 +35,7 @@
         <button id="newGameBtn" class="primary">NOWY ŚWIAT</button>
         <button id="continueBtn">KONTYNUUJ</button>
       </div>
-      <div class="tiny">WASD ruch · Shift sprint · Spacja skok/pływanie · LPM kop/atak · PPM postaw/użyj · E ekwipunek/crafting · 1–9 hotbar · Esc pauza/zamknij panel · M duża mapa · środkowy przycisk myszy: ulepsz konstrukcję · T katalog admina · F3 debug</div>
+      <div class="tiny">WASD ruch · Shift sprint · Ctrl cichy chód · Spacja skok/pływanie · LPM kop/atak · PPM postaw/użyj · E ekwipunek/crafting · 1–9 hotbar · Esc pauza/zamknij panel · M duża mapa · X: X-Ray od 1 lvl (45 s / 14 s) · PPM na śpiworze: sen i respawn · środkowy przycisk myszy: ulepsz konstrukcję · T katalog admina · F3 debug</div>
       <div class="legal">Autorskie tekstury i dźwięki stworzone dla tego builda. Styl wizualny jest inspirowany starymi, surowymi sandboxami voxelowymi — bez kopiowania cudzych assetów 1:1.</div>
     </div>
   </section>
@@ -74,15 +76,16 @@
     </div>
     <div class="inventory-layout">
       <aside class="paperdoll">
-        <div class="paperdoll-title">POSTAĆ</div>
+        <div class="paperdoll-title">POSTAĆ · OCHRONA</div>
         <div class="avatar-preview"><div class="avatar-head"></div><div class="avatar-body"></div><div class="avatar-arm a1"></div><div class="avatar-arm a2"></div><div class="avatar-leg l1"></div><div class="avatar-leg l2"></div></div>
         <div class="hand-row"><div><span>GŁÓWNA</span><div id="mainHandSlot" class="equip-slot inv-slot"></div></div><div><span>DRUGA RĘKA</span><div id="offhandSlot" class="equip-slot inv-slot"></div></div></div>
+        <div class="armor-panel"><div class="armor-heading">PANCERZ <small>przeciągnij elementy do slotów</small></div><div id="armorGrid" class="armor-grid"></div><div id="armorStats" class="armor-stats">Pancerz: 0 / 15</div></div>
         <div class="offhand-help">Druga ręka jest prawdziwym slotem. Możesz do niej przeciągnąć pochodnię, blok, jedzenie albo narzędzie.</div>
       </aside>
 
       <main class="inventory-main">
         <div id="chestSection" class="chest-section hidden">
-          <div class="inventory-section-title">SKRZYNKA STARTOWA</div>
+          <div class="inventory-section-title" id="chestTitle">SKRZYNKA STARTOWA</div>
           <div id="chestGrid" class="inventory-grid chest-grid"></div>
           <div class="chest-hint">Losowy startowy loot. Po zabraniu przedmiotów skrzynka zostaje w świecie.</div>
         </div>
@@ -143,10 +146,12 @@
       <div id="threatInfo">Zagrożenie: czujność</div>
     </div>
     <div class="hud-clock" id="worldClock">DZIEŃ 1 · 16:00</div>
-    <div id="minimapWrap" class="minimap-wrap"><canvas id="minimap" width="174" height="174"></canvas><div class="minimap-ring"></div><div id="minimapBiome" class="minimap-biome">FOREST</div></div>
+    <div class="compass-hud" id="compass"><div class="compass-title">KOMPAS · POŁOŻENIE</div><div class="compass-strip" id="compassStrip"><span class="compass-tick"></span></div><div id="compassHeading" class="compass-heading">N · 000°</div><div id="compassPosition" class="compass-coords">X 0 · Y 0 · Z 0</div></div><div class="scan-ability" id="scanAbility">X-RAY · LVL 1</div><div class="xp-progress" aria-label="Doświadczenie i zdolność X-Ray"><div class="xp-caption"><span id="xpLabel">POZIOM 0</span><b id="xpNumerical">0 / 90 XP</b></div><div class="xp-track"><div id="xpBar" class="xp-fill"></div></div></div>
+    <div id="minimapWrap" class="minimap-wrap"><canvas id="minimap" width="174" height="174"></canvas><div class="minimap-ring"></div><div class="minimap-cursor" id="minimapCursor" aria-label="Kierunek patrzenia"><i></i></div><div class="minimap-north">N</div><div id="minimapBiome" class="minimap-biome">FOREST</div><div class="minimap-orbs"><div class="map-orb"><b id="miniHp">10♥</b><small>HP</small></div><div class="map-orb"><b id="miniNight">N1</b><small>NOC</small></div><div class="map-orb"><b id="miniLevel">L1</b><small>LVL</small></div></div><div class="armor-orbs" aria-label="Pancerz i zużycie"><div class="armor-orb" id="armorOrbHead"><b>⛑</b><small>GŁOWA</small><em>—</em></div><div class="armor-orb" id="armorOrbChest"><b>▣</b><small>TUŁÓW</small><em>—</em></div><div class="armor-orb" id="armorOrbLegs"><b>Ⅱ</b><small>NOGI</small><em>—</em></div><div class="armor-orb" id="armorOrbFeet"><b>⌑</b><small>STOPY</small><em>—</em></div></div></div>
 
     <div id="message"></div>
     <div id="crosshair"><i></i><i></i><i></i><i></i><div id="mineProgress"></div></div>
+    <canvas id="wolfAwareness" width="230" height="112" aria-label="Wskaźnik wykrycia przez wilki"></canvas>
     <div id="mineHud" class="mine-hud"><div class="mine-hud-head"><span id="mineBlockName">BLOK</span><b id="minePercent">0%</b></div><div class="mine-bar"><i id="mineBarFill"></i></div></div>
     <div id="worldMineBar" class="world-mine-bar hidden"><span id="worldMineName">KAMIEŃ</span><div><i id="worldMineFill"></i></div><b id="worldMinePct">0%</b></div>
     <div id="weatherInfo"></div>
@@ -168,6 +173,6 @@
     <div id="nightWarning" class="hidden">NIE JESTEŚ SAM</div>
   </div>
 
-  <script src="src/game.js"></script>
+  <script type="module" src="src/main.js"></script>
 </body>
 </html>

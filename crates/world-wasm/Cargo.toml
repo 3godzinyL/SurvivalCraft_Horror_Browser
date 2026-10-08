@@ -1,0 +1,10 @@
+[package]
+name = "nightcraft-world-wasm"
+version = "0.15.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+nightcraft-world-core = { path = "../world-core" }

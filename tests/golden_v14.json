@@ -1,0 +1,2168 @@
+{
+  "definitions": {
+    "blocks": {
+      "0": {
+        "name": "Powietrze",
+        "solid": false,
+        "transparent": true,
+        "hard": 0
+      },
+      "1": {
+        "name": "Mokra trawa",
+        "solid": true,
+        "hard": 0.62,
+        "drop": "dirt",
+        "tool": "shovel",
+        "material": "grass"
+      },
+      "2": {
+        "name": "Ziemia",
+        "solid": true,
+        "hard": 0.58,
+        "drop": "dirt",
+        "tool": "shovel",
+        "material": "dirt"
+      },
+      "3": {
+        "name": "Kamień",
+        "solid": true,
+        "hard": 1.75,
+        "drop": "stone",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "4": {
+        "name": "Ciemny piasek",
+        "solid": true,
+        "hard": 0.52,
+        "drop": "sand",
+        "tool": "shovel",
+        "material": "sand"
+      },
+      "5": {
+        "name": "Drewno dębowe",
+        "solid": true,
+        "hard": 1.28,
+        "drop": "wood",
+        "tool": "axe",
+        "material": "wood"
+      },
+      "6": {
+        "name": "Mokre liście",
+        "solid": true,
+        "hard": 0.26,
+        "drop": "leaves",
+        "transparent": true,
+        "material": "grass"
+      },
+      "7": {
+        "name": "Ruda węgla",
+        "solid": true,
+        "hard": 1.9,
+        "drop": "coal",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "8": {
+        "name": "Ruda żelaza",
+        "solid": true,
+        "hard": 2.25,
+        "drop": "iron",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "9": {
+        "name": "Zimna woda",
+        "solid": false,
+        "liquid": true,
+        "transparent": true,
+        "hard": 99,
+        "material": "water"
+      },
+      "10": {
+        "name": "Surowe deski",
+        "solid": true,
+        "hard": 0.9,
+        "drop": "planks",
+        "tool": "axe",
+        "material": "wood"
+      },
+      "11": {
+        "name": "Pochodnia",
+        "solid": false,
+        "torch": true,
+        "transparent": true,
+        "hard": 0.15,
+        "drop": "torch",
+        "material": "wood"
+      },
+      "12": {
+        "name": "Skała macierzysta",
+        "solid": true,
+        "hard": 999,
+        "material": "stone"
+      },
+      "13": {
+        "name": "Omszały kamień",
+        "solid": true,
+        "hard": 1.55,
+        "drop": "stone",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "14": {
+        "name": "Żwir",
+        "solid": true,
+        "hard": 0.72,
+        "drop": "gravel",
+        "tool": "shovel",
+        "material": "sand"
+      },
+      "15": {
+        "name": "Błoto",
+        "solid": true,
+        "hard": 0.48,
+        "drop": "mud",
+        "tool": "shovel",
+        "material": "dirt"
+      },
+      "16": {
+        "name": "Ciemny granit",
+        "solid": true,
+        "hard": 2.05,
+        "drop": "darkstone",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "17": {
+        "name": "Drewno świerkowe",
+        "solid": true,
+        "hard": 1.38,
+        "drop": "pinewood",
+        "tool": "axe",
+        "material": "wood"
+      },
+      "18": {
+        "name": "Igliwie",
+        "solid": true,
+        "hard": 0.28,
+        "drop": "pineleaves",
+        "transparent": true,
+        "material": "grass"
+      },
+      "19": {
+        "name": "Martwe drewno",
+        "solid": true,
+        "hard": 1,
+        "drop": "deadwood",
+        "tool": "axe",
+        "material": "wood"
+      },
+      "20": {
+        "name": "Śnieg",
+        "solid": true,
+        "hard": 0.4,
+        "drop": "snow",
+        "tool": "shovel",
+        "material": "snow"
+      },
+      "21": {
+        "name": "Glina",
+        "solid": true,
+        "hard": 0.75,
+        "drop": "clay",
+        "tool": "shovel",
+        "material": "dirt"
+      },
+      "22": {
+        "name": "Łupek",
+        "solid": true,
+        "hard": 1.95,
+        "drop": "slate",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "23": {
+        "name": "Splątane korzenie",
+        "solid": true,
+        "hard": 0.8,
+        "drop": "roots",
+        "tool": "axe",
+        "material": "wood"
+      },
+      "24": {
+        "name": "Brzozowe drewno",
+        "solid": true,
+        "hard": 1.22,
+        "drop": "birchwood",
+        "tool": "axe",
+        "material": "wood"
+      },
+      "25": {
+        "name": "Liście brzozy",
+        "solid": true,
+        "hard": 0.22,
+        "drop": "birchleaves",
+        "transparent": true,
+        "material": "grass"
+      },
+      "26": {
+        "name": "Czarne drewno",
+        "solid": true,
+        "hard": 1.45,
+        "drop": "darkwood",
+        "tool": "axe",
+        "material": "wood"
+      },
+      "27": {
+        "name": "Ciemne liście",
+        "solid": true,
+        "hard": 0.28,
+        "drop": "darkleaves",
+        "transparent": true,
+        "material": "grass"
+      },
+      "28": {
+        "name": "Rdzawe liście",
+        "solid": true,
+        "hard": 0.24,
+        "drop": "autumnleaves",
+        "transparent": true,
+        "material": "grass"
+      },
+      "29": {
+        "name": "Wysoka trawa",
+        "solid": false,
+        "transparent": true,
+        "decor": true,
+        "hard": 0.08,
+        "drop": null,
+        "material": "grass"
+      },
+      "30": {
+        "name": "Paproć",
+        "solid": false,
+        "transparent": true,
+        "decor": true,
+        "hard": 0.09,
+        "drop": null,
+        "material": "grass"
+      },
+      "31": {
+        "name": "Trzcina",
+        "solid": false,
+        "transparent": true,
+        "decor": true,
+        "hard": 0.12,
+        "drop": null,
+        "material": "grass"
+      },
+      "32": {
+        "name": "Krwawy mak",
+        "solid": false,
+        "transparent": true,
+        "decor": true,
+        "hard": 0.06,
+        "drop": null,
+        "material": "grass"
+      },
+      "33": {
+        "name": "Biały kwiat",
+        "solid": false,
+        "transparent": true,
+        "decor": true,
+        "hard": 0.06,
+        "drop": null,
+        "material": "grass"
+      },
+      "34": {
+        "name": "Grzyb leśny",
+        "solid": false,
+        "transparent": true,
+        "decor": true,
+        "hard": 0.08,
+        "drop": null,
+        "material": "grass"
+      },
+      "35": {
+        "name": "Lód",
+        "solid": true,
+        "hard": 0.85,
+        "drop": "ice",
+        "transparent": true,
+        "material": "snow"
+      },
+      "36": {
+        "name": "Łupany kamień",
+        "solid": true,
+        "hard": 1.55,
+        "drop": "cobble",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "37": {
+        "name": "Drewniana skrzynia",
+        "solid": true,
+        "hard": 1.1,
+        "drop": "chest",
+        "tool": "axe",
+        "material": "wood"
+      },
+      "38": {
+        "name": "Ciemna próchnica",
+        "solid": true,
+        "hard": 0.54,
+        "drop": "dirt",
+        "tool": "shovel",
+        "material": "dirt"
+      },
+      "39": {
+        "name": "Bielicowa ziemia",
+        "solid": true,
+        "hard": 0.58,
+        "drop": "dirt",
+        "tool": "shovel",
+        "material": "dirt"
+      },
+      "40": {
+        "name": "Muł rzeczny",
+        "solid": true,
+        "hard": 0.45,
+        "drop": "dirt",
+        "tool": "shovel",
+        "material": "sand"
+      },
+      "41": {
+        "name": "Torf",
+        "solid": true,
+        "hard": 0.46,
+        "drop": "dirt",
+        "tool": "shovel",
+        "material": "dirt"
+      },
+      "42": {
+        "name": "Wapień",
+        "solid": true,
+        "hard": 1.55,
+        "drop": "stone",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "43": {
+        "name": "Granit",
+        "solid": true,
+        "hard": 2.05,
+        "drop": "stone",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "44": {
+        "name": "Bazalt",
+        "solid": true,
+        "hard": 2.2,
+        "drop": "stone",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "45": {
+        "name": "Marmur",
+        "solid": true,
+        "hard": 1.85,
+        "drop": "stone",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "46": {
+        "name": "Drewno wierzbowe",
+        "solid": true,
+        "hard": 1.18,
+        "drop": "willowwood",
+        "tool": "axe",
+        "material": "wood"
+      },
+      "47": {
+        "name": "Liście wierzby",
+        "solid": true,
+        "hard": 0.22,
+        "drop": "willowleaves",
+        "transparent": true,
+        "material": "grass"
+      },
+      "48": {
+        "name": "Niebieski kwiat",
+        "solid": false,
+        "transparent": true,
+        "decor": true,
+        "hard": 0.06,
+        "drop": null,
+        "material": "grass"
+      },
+      "49": {
+        "name": "Żółty kwiat",
+        "solid": false,
+        "transparent": true,
+        "decor": true,
+        "hard": 0.06,
+        "drop": null,
+        "material": "grass"
+      },
+      "50": {
+        "name": "Wrzos",
+        "solid": false,
+        "transparent": true,
+        "decor": true,
+        "hard": 0.08,
+        "drop": null,
+        "material": "grass"
+      },
+      "51": {
+        "name": "Omszała ziemia",
+        "solid": true,
+        "hard": 0.55,
+        "drop": "dirt",
+        "tool": "shovel",
+        "material": "grass"
+      },
+      "52": {
+        "name": "Sucha darń",
+        "solid": true,
+        "hard": 0.56,
+        "drop": "dirt",
+        "tool": "shovel",
+        "material": "grass"
+      },
+      "53": {
+        "name": "Leśna darń",
+        "solid": true,
+        "hard": 0.58,
+        "drop": "dirt",
+        "tool": "shovel",
+        "material": "grass"
+      },
+      "54": {
+        "name": "Przymarznięta darń",
+        "solid": true,
+        "hard": 0.66,
+        "drop": "dirt",
+        "tool": "shovel",
+        "material": "snow"
+      },
+      "55": {
+        "name": "Piaskowiec",
+        "solid": true,
+        "hard": 1.28,
+        "drop": "sandstone",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "56": {
+        "name": "Rdzawy piasek",
+        "solid": true,
+        "hard": 0.54,
+        "drop": "redsand",
+        "tool": "shovel",
+        "material": "sand"
+      },
+      "57": {
+        "name": "Kamień porośnięty mchem",
+        "solid": true,
+        "hard": 1.62,
+        "drop": "stone",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "58": {
+        "name": "Drewno topolowe",
+        "solid": true,
+        "hard": 1.18,
+        "drop": "poplarwood",
+        "tool": "axe",
+        "material": "wood"
+      },
+      "59": {
+        "name": "Liście topoli",
+        "solid": true,
+        "hard": 0.21,
+        "drop": "poplarleaves",
+        "transparent": true,
+        "material": "grass"
+      },
+      "60": {
+        "name": "Drewno mimozy",
+        "solid": true,
+        "hard": 1.16,
+        "drop": "mimosawood",
+        "tool": "axe",
+        "material": "wood"
+      },
+      "61": {
+        "name": "Liście mimozy",
+        "solid": true,
+        "hard": 0.2,
+        "drop": "mimosaleaves",
+        "transparent": true,
+        "material": "grass"
+      },
+      "62": {
+        "name": "Leśny krzew",
+        "solid": false,
+        "transparent": true,
+        "decor": true,
+        "hard": 0.1,
+        "drop": null,
+        "material": "grass"
+      },
+      "63": {
+        "name": "Suchy krzew",
+        "solid": false,
+        "transparent": true,
+        "decor": true,
+        "hard": 0.08,
+        "drop": null,
+        "material": "grass"
+      },
+      "64": {
+        "name": "Dzika dynia",
+        "solid": true,
+        "hard": 0.42,
+        "drop": "pumpkin",
+        "tool": "axe",
+        "material": "wood"
+      },
+      "65": {
+        "name": "Dziki kaktus",
+        "solid": true,
+        "hard": 0.48,
+        "drop": "cactus",
+        "material": "grass"
+      },
+      "66": {
+        "name": "Kamień rzeczny",
+        "solid": true,
+        "hard": 1.38,
+        "drop": "riverrock",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "67": {
+        "name": "Zbita ziemia jaskiniowa",
+        "solid": true,
+        "hard": 0.72,
+        "drop": "dirt",
+        "tool": "shovel",
+        "material": "dirt"
+      },
+      "68": {
+        "name": "Kamienne cegły",
+        "solid": true,
+        "hard": 1.72,
+        "drop": "stone_bricks",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "69": {
+        "name": "Popękane cegły",
+        "solid": true,
+        "hard": 1.55,
+        "drop": "cracked_bricks",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "70": {
+        "name": "Omszałe cegły",
+        "solid": true,
+        "hard": 1.48,
+        "drop": "mossy_bricks",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "71": {
+        "name": "Rzeźbiony kamień",
+        "solid": true,
+        "hard": 1.86,
+        "drop": "chiseled_stone",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "72": {
+        "name": "Stare deski",
+        "solid": true,
+        "hard": 0.88,
+        "drop": "old_planks",
+        "tool": "axe",
+        "material": "wood"
+      },
+      "73": {
+        "name": "Ciemne deski",
+        "solid": true,
+        "hard": 1.02,
+        "drop": "dark_planks",
+        "tool": "axe",
+        "material": "wood"
+      },
+      "74": {
+        "name": "Rumowisko",
+        "solid": true,
+        "hard": 1.12,
+        "drop": "rubble",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "75": {
+        "name": "Popiół",
+        "solid": true,
+        "hard": 0.34,
+        "drop": "ash_block",
+        "tool": "shovel",
+        "material": "sand"
+      },
+      "76": {
+        "name": "Kamień runiczny",
+        "solid": true,
+        "hard": 2.05,
+        "drop": "rune_stone",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "77": {
+        "name": "Zwietrzałe cegły",
+        "solid": true,
+        "hard": 1.62,
+        "drop": "weathered_bricks",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "78": {
+        "name": "Stare dachówki",
+        "solid": true,
+        "hard": 1.18,
+        "drop": "old_tiles",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "79": {
+        "name": "Kamień nagrobny",
+        "solid": true,
+        "hard": 1.65,
+        "drop": "grave_stone",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "80": {
+        "name": "Ruda złota",
+        "solid": true,
+        "hard": 2.55,
+        "drop": "gold_ore",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "81": {
+        "name": "Kamienny piec",
+        "solid": true,
+        "hard": 2.2,
+        "drop": "furnace",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "82": {
+        "name": "Szkło",
+        "solid": true,
+        "hard": 0.45,
+        "drop": "glass",
+        "tool": null,
+        "material": "glass",
+        "transparent": true
+      },
+      "83": {
+        "name": "Przepalony kamień",
+        "solid": true,
+        "hard": 2,
+        "drop": "smooth_stone",
+        "tool": "pickaxe",
+        "material": "stone"
+      },
+      "84": {
+        "name": "Blok żelaza",
+        "solid": true,
+        "hard": 3.8,
+        "drop": "iron_block",
+        "tool": "pickaxe",
+        "material": "metal"
+      },
+      "85": {
+        "name": "Blok złota",
+        "solid": true,
+        "hard": 3.2,
+        "drop": "gold_block",
+        "tool": "pickaxe",
+        "material": "metal"
+      },
+      "86": {
+        "name": "Drewniane drzwi",
+        "solid": true,
+        "hard": 1,
+        "drop": "wood_door",
+        "tool": "axe",
+        "material": "wood",
+        "construction": "door"
+      },
+      "87": {
+        "name": "Drewniane schodki",
+        "solid": true,
+        "hard": 0.95,
+        "drop": "wood_stairs",
+        "tool": "axe",
+        "material": "wood",
+        "construction": "stairs"
+      },
+      "88": {
+        "name": "Drewniane ogrodzenie",
+        "solid": true,
+        "hard": 0.9,
+        "drop": "wood_fence",
+        "tool": "axe",
+        "material": "wood",
+        "construction": "fence"
+      },
+      "89": {
+        "name": "Śpiwór ekspedycyjny",
+        "solid": false,
+        "transparent": true,
+        "hard": 0.48,
+        "drop": "bedroll",
+        "material": "plank"
+      }
+    },
+    "items": {
+      "dirt": {
+        "name": "Ziemia",
+        "place": 2,
+        "kind": "block"
+      },
+      "stone": {
+        "name": "Kamień",
+        "place": 3,
+        "kind": "block"
+      },
+      "sand": {
+        "name": "Ciemny piasek",
+        "place": 4,
+        "kind": "block"
+      },
+      "gravel": {
+        "name": "Żwir",
+        "place": 14,
+        "kind": "block"
+      },
+      "mud": {
+        "name": "Błoto",
+        "place": 15,
+        "kind": "block"
+      },
+      "darkstone": {
+        "name": "Ciemny granit",
+        "place": 16,
+        "kind": "block"
+      },
+      "wood": {
+        "name": "Drewno dębowe",
+        "place": 5,
+        "kind": "block"
+      },
+      "pinewood": {
+        "name": "Drewno świerkowe",
+        "place": 17,
+        "kind": "block"
+      },
+      "deadwood": {
+        "name": "Martwe drewno",
+        "place": 19,
+        "kind": "block"
+      },
+      "leaves": {
+        "name": "Mokre liście",
+        "place": 6,
+        "kind": "block"
+      },
+      "pineleaves": {
+        "name": "Igliwie",
+        "place": 18,
+        "kind": "block"
+      },
+      "snow": {
+        "name": "Śnieg",
+        "place": 20,
+        "kind": "block"
+      },
+      "clay": {
+        "name": "Glina",
+        "place": 21,
+        "kind": "block"
+      },
+      "slate": {
+        "name": "Łupek",
+        "place": 22,
+        "kind": "block"
+      },
+      "roots": {
+        "name": "Korzenie",
+        "place": 23,
+        "kind": "block"
+      },
+      "birchwood": {
+        "name": "Brzozowe drewno",
+        "place": 24,
+        "kind": "block"
+      },
+      "birchleaves": {
+        "name": "Liście brzozy",
+        "place": 25,
+        "kind": "block"
+      },
+      "darkwood": {
+        "name": "Czarne drewno",
+        "place": 26,
+        "kind": "block"
+      },
+      "darkleaves": {
+        "name": "Ciemne liście",
+        "place": 27,
+        "kind": "block"
+      },
+      "autumnleaves": {
+        "name": "Rdzawe liście",
+        "place": 28,
+        "kind": "block"
+      },
+      "ice": {
+        "name": "Lód",
+        "place": 35,
+        "kind": "block"
+      },
+      "cobble": {
+        "name": "Łupany kamień",
+        "place": 36,
+        "kind": "block"
+      },
+      "chest": {
+        "name": "Skrzynia",
+        "place": 37,
+        "kind": "block"
+      },
+      "loam": {
+        "name": "Ciemna próchnica",
+        "place": 38,
+        "kind": "block"
+      },
+      "podzol": {
+        "name": "Bielicowa ziemia",
+        "place": 39,
+        "kind": "block"
+      },
+      "silt": {
+        "name": "Muł rzeczny",
+        "place": 40,
+        "kind": "block"
+      },
+      "peat": {
+        "name": "Torf",
+        "place": 41,
+        "kind": "block"
+      },
+      "limestone": {
+        "name": "Wapień",
+        "place": 42,
+        "kind": "block"
+      },
+      "granite": {
+        "name": "Granit",
+        "place": 43,
+        "kind": "block"
+      },
+      "basalt": {
+        "name": "Bazalt",
+        "place": 44,
+        "kind": "block"
+      },
+      "marble": {
+        "name": "Marmur",
+        "place": 45,
+        "kind": "block"
+      },
+      "willowwood": {
+        "name": "Drewno wierzbowe",
+        "place": 46,
+        "kind": "block"
+      },
+      "willowleaves": {
+        "name": "Liście wierzby",
+        "place": 47,
+        "kind": "block"
+      },
+      "mossydirt": {
+        "name": "Omszała ziemia",
+        "place": 51,
+        "kind": "block"
+      },
+      "drygrass": {
+        "name": "Sucha darń",
+        "place": 52,
+        "kind": "block"
+      },
+      "forestgrass": {
+        "name": "Leśna darń",
+        "place": 53,
+        "kind": "block"
+      },
+      "frostgrass": {
+        "name": "Przymarznięta darń",
+        "place": 54,
+        "kind": "block"
+      },
+      "sandstone": {
+        "name": "Piaskowiec",
+        "place": 55,
+        "kind": "block"
+      },
+      "redsand": {
+        "name": "Rdzawy piasek",
+        "place": 56,
+        "kind": "block"
+      },
+      "mossystone": {
+        "name": "Kamień z mchem",
+        "place": 57,
+        "kind": "block"
+      },
+      "poplarwood": {
+        "name": "Drewno topolowe",
+        "place": 58,
+        "kind": "block"
+      },
+      "poplarleaves": {
+        "name": "Liście topoli",
+        "place": 59,
+        "kind": "block"
+      },
+      "mimosawood": {
+        "name": "Drewno mimozy",
+        "place": 60,
+        "kind": "block"
+      },
+      "mimosaleaves": {
+        "name": "Liście mimozy",
+        "place": 61,
+        "kind": "block"
+      },
+      "bush": {
+        "name": "Leśny krzew",
+        "place": 62,
+        "kind": "block"
+      },
+      "drybush": {
+        "name": "Suchy krzew",
+        "place": 63,
+        "kind": "block"
+      },
+      "pumpkin": {
+        "name": "Dzika dynia",
+        "place": 64,
+        "kind": "block",
+        "food": 18
+      },
+      "cactus": {
+        "name": "Dziki kaktus",
+        "place": 65,
+        "kind": "block"
+      },
+      "riverrock": {
+        "name": "Kamień rzeczny",
+        "place": 66,
+        "kind": "block"
+      },
+      "cavedirt": {
+        "name": "Zbita ziemia",
+        "place": 67,
+        "kind": "block"
+      },
+      "stone_bricks": {
+        "name": "Kamienne cegły",
+        "place": 68,
+        "kind": "block"
+      },
+      "cracked_bricks": {
+        "name": "Popękane cegły",
+        "place": 69,
+        "kind": "block"
+      },
+      "mossy_bricks": {
+        "name": "Omszałe cegły",
+        "place": 70,
+        "kind": "block"
+      },
+      "chiseled_stone": {
+        "name": "Rzeźbiony kamień",
+        "place": 71,
+        "kind": "block"
+      },
+      "old_planks": {
+        "name": "Stare deski",
+        "place": 72,
+        "kind": "block"
+      },
+      "dark_planks": {
+        "name": "Ciemne deski",
+        "place": 73,
+        "kind": "block"
+      },
+      "rubble": {
+        "name": "Rumowisko",
+        "place": 74,
+        "kind": "block"
+      },
+      "ash_block": {
+        "name": "Popiół",
+        "place": 75,
+        "kind": "block"
+      },
+      "rune_stone": {
+        "name": "Kamień runiczny",
+        "place": 76,
+        "kind": "block"
+      },
+      "weathered_bricks": {
+        "name": "Zwietrzałe cegły",
+        "place": 77,
+        "kind": "block"
+      },
+      "old_tiles": {
+        "name": "Stare dachówki",
+        "place": 78,
+        "kind": "block"
+      },
+      "grave_stone": {
+        "name": "Kamień nagrobny",
+        "place": 79,
+        "kind": "block"
+      },
+      "coal": {
+        "name": "Węgiel",
+        "kind": "resource"
+      },
+      "iron": {
+        "name": "Ruda żelaza",
+        "kind": "resource"
+      },
+      "gold_ore": {
+        "name": "Ruda złota",
+        "kind": "resource"
+      },
+      "iron_ingot": {
+        "name": "Sztabka żelaza",
+        "kind": "resource"
+      },
+      "gold_ingot": {
+        "name": "Sztabka złota",
+        "kind": "resource"
+      },
+      "stick": {
+        "name": "Drewniany kij",
+        "kind": "resource"
+      },
+      "planks": {
+        "name": "Surowe deski",
+        "place": 10,
+        "kind": "block"
+      },
+      "torch": {
+        "name": "Pochodnia",
+        "place": 11,
+        "kind": "light"
+      },
+      "furnace": {
+        "name": "Kamienny piec",
+        "place": 81,
+        "kind": "block"
+      },
+      "glass": {
+        "name": "Szkło",
+        "place": 82,
+        "kind": "block"
+      },
+      "smooth_stone": {
+        "name": "Przepalony kamień",
+        "place": 83,
+        "kind": "block"
+      },
+      "iron_block": {
+        "name": "Blok żelaza",
+        "place": 84,
+        "kind": "block"
+      },
+      "gold_block": {
+        "name": "Blok złota",
+        "place": 85,
+        "kind": "block"
+      },
+      "wood_door": {
+        "name": "Drewniane drzwi",
+        "place": 86,
+        "kind": "construction",
+        "maxStack": 16
+      },
+      "wood_stairs": {
+        "name": "Drewniane schodki",
+        "place": 87,
+        "kind": "construction"
+      },
+      "wood_fence": {
+        "name": "Drewniane ogrodzenie",
+        "place": 88,
+        "kind": "construction"
+      },
+      "wood_pickaxe": {
+        "name": "Drewniany kilof",
+        "tool": "pickaxe",
+        "power": 1.3,
+        "kind": "tool",
+        "tier": "wood",
+        "maxStack": 1
+      },
+      "wood_axe": {
+        "name": "Drewniana siekiera",
+        "tool": "axe",
+        "power": 1.28,
+        "damage": 5,
+        "kind": "tool",
+        "tier": "wood",
+        "maxStack": 1
+      },
+      "wood_shovel": {
+        "name": "Drewniana łopata",
+        "tool": "shovel",
+        "power": 1.42,
+        "kind": "tool",
+        "tier": "wood",
+        "maxStack": 1
+      },
+      "wood_sword": {
+        "name": "Drewniany miecz",
+        "tool": "sword",
+        "damage": 7,
+        "kind": "tool",
+        "tier": "wood",
+        "maxStack": 1
+      },
+      "pickaxe": {
+        "name": "Ciężki kilof",
+        "tool": "pickaxe",
+        "power": 3.65,
+        "kind": "tool",
+        "tier": "iron",
+        "maxStack": 1
+      },
+      "axe": {
+        "name": "Topór leśny",
+        "tool": "axe",
+        "power": 3.25,
+        "damage": 9,
+        "kind": "tool",
+        "tier": "iron",
+        "maxStack": 1
+      },
+      "shovel": {
+        "name": "Łopata",
+        "tool": "shovel",
+        "power": 3.7,
+        "kind": "tool",
+        "tier": "iron",
+        "maxStack": 1
+      },
+      "sword": {
+        "name": "Maczeta",
+        "tool": "sword",
+        "damage": 15,
+        "kind": "tool",
+        "tier": "iron",
+        "maxStack": 1
+      },
+      "gold_pickaxe": {
+        "name": "Złoty kilof",
+        "tool": "pickaxe",
+        "power": 4.15,
+        "kind": "tool",
+        "tier": "gold",
+        "maxStack": 1
+      },
+      "gold_axe": {
+        "name": "Złota siekiera",
+        "tool": "axe",
+        "power": 3.9,
+        "damage": 10,
+        "kind": "tool",
+        "tier": "gold",
+        "maxStack": 1
+      },
+      "gold_shovel": {
+        "name": "Złota łopata",
+        "tool": "shovel",
+        "power": 4.25,
+        "kind": "tool",
+        "tier": "gold",
+        "maxStack": 1
+      },
+      "gold_sword": {
+        "name": "Złoty miecz",
+        "tool": "sword",
+        "damage": 13,
+        "kind": "tool",
+        "tier": "gold",
+        "maxStack": 1
+      },
+      "rawmeat": {
+        "name": "Surowe mięso",
+        "food": 21,
+        "hurt": 4,
+        "kind": "food"
+      },
+      "cookedmeat": {
+        "name": "Pieczone mięso",
+        "food": 48,
+        "heal": 9,
+        "kind": "food"
+      },
+      "berries": {
+        "name": "Ciemne jagody",
+        "food": 11,
+        "heal": 1,
+        "kind": "food"
+      },
+      "bandage": {
+        "name": "Bandaż",
+        "heal": 27,
+        "kind": "medical"
+      },
+      "bedroll": {
+        "name": "Śpiwór · punkt odrodzenia",
+        "place": 89,
+        "kind": "camp",
+        "maxStack": 4,
+        "footprint": 2
+      },
+      "__bedroll_footprint": {
+        "name": "Zajęte przez śpiwór",
+        "maxStack": 1,
+        "internal": true
+      },
+      "leather": {
+        "name": "Wyprawiona skóra",
+        "kind": "resource"
+      },
+      "rabbit_hide": {
+        "name": "Królicza skórka",
+        "kind": "resource"
+      },
+      "scrap": {
+        "name": "Zardzewiały złom",
+        "kind": "resource"
+      },
+      "rope": {
+        "name": "Powróz",
+        "kind": "resource"
+      },
+      "leather_head": {
+        "name": "Skórzana czapka",
+        "kind": "armor",
+        "armorSlot": "head",
+        "armor": 1,
+        "tier": "leather",
+        "maxStack": 1,
+        "durability": 85
+      },
+      "leather_chest": {
+        "name": "Skórzana zbroja",
+        "kind": "armor",
+        "armorSlot": "chest",
+        "armor": 3,
+        "tier": "leather",
+        "maxStack": 1,
+        "durability": 85
+      },
+      "leather_legs": {
+        "name": "Skórzana nogawice",
+        "kind": "armor",
+        "armorSlot": "legs",
+        "armor": 2,
+        "tier": "leather",
+        "maxStack": 1,
+        "durability": 85
+      },
+      "leather_feet": {
+        "name": "Skórzana buty",
+        "kind": "armor",
+        "armorSlot": "feet",
+        "armor": 1,
+        "tier": "leather",
+        "maxStack": 1,
+        "durability": 85
+      },
+      "iron_head": {
+        "name": "Żelazna czapka",
+        "kind": "armor",
+        "armorSlot": "head",
+        "armor": 2,
+        "tier": "iron",
+        "maxStack": 1,
+        "durability": 190
+      },
+      "iron_chest": {
+        "name": "Żelazna zbroja",
+        "kind": "armor",
+        "armorSlot": "chest",
+        "armor": 6,
+        "tier": "iron",
+        "maxStack": 1,
+        "durability": 190
+      },
+      "iron_legs": {
+        "name": "Żelazna nogawice",
+        "kind": "armor",
+        "armorSlot": "legs",
+        "armor": 5,
+        "tier": "iron",
+        "maxStack": 1,
+        "durability": 190
+      },
+      "iron_feet": {
+        "name": "Żelazna buty",
+        "kind": "armor",
+        "armorSlot": "feet",
+        "armor": 2,
+        "tier": "iron",
+        "maxStack": 1,
+        "durability": 190
+      }
+    },
+    "recipes": [
+      {
+        "name": "4× Deski",
+        "out": {
+          "planks": 4
+        },
+        "pattern": [
+          "L"
+        ],
+        "key": {
+          "L": [
+            "wood",
+            "pinewood",
+            "birchwood",
+            "darkwood",
+            "willowwood",
+            "poplarwood",
+            "mimosawood",
+            "deadwood"
+          ]
+        }
+      },
+      {
+        "name": "4× Kij",
+        "out": {
+          "stick": 4
+        },
+        "pattern": [
+          "P",
+          "P"
+        ],
+        "key": {
+          "P": "planks"
+        }
+      },
+      {
+        "name": "Drewniany kilof",
+        "out": {
+          "wood_pickaxe": 1
+        },
+        "pattern": [
+          "PPP",
+          " S ",
+          " S "
+        ],
+        "key": {
+          "P": "planks",
+          "S": "stick"
+        }
+      },
+      {
+        "name": "Drewniana siekiera",
+        "out": {
+          "wood_axe": 1
+        },
+        "pattern": [
+          "PP ",
+          "PS ",
+          " S "
+        ],
+        "key": {
+          "P": "planks",
+          "S": "stick"
+        },
+        "mirror": true
+      },
+      {
+        "name": "Drewniana łopata",
+        "out": {
+          "wood_shovel": 1
+        },
+        "pattern": [
+          "P",
+          "S",
+          "S"
+        ],
+        "key": {
+          "P": "planks",
+          "S": "stick"
+        }
+      },
+      {
+        "name": "Drewniany miecz",
+        "out": {
+          "wood_sword": 1
+        },
+        "pattern": [
+          "P",
+          "P",
+          "S"
+        ],
+        "key": {
+          "P": "planks",
+          "S": "stick"
+        }
+      },
+      {
+        "name": "4× Kamienne cegły",
+        "out": {
+          "stone_bricks": 4
+        },
+        "pattern": [
+          "SS",
+          "SS"
+        ],
+        "key": {
+          "S": "smooth_stone"
+        }
+      },
+      {
+        "name": "4× Pochodnia",
+        "out": {
+          "torch": 4
+        },
+        "pattern": [
+          "C",
+          "S"
+        ],
+        "key": {
+          "C": "coal",
+          "S": "stick"
+        }
+      },
+      {
+        "name": "Kamienny piec",
+        "out": {
+          "furnace": 1
+        },
+        "pattern": [
+          "CCC",
+          "C C",
+          "CCC"
+        ],
+        "key": {
+          "C": "cobble"
+        }
+      },
+      {
+        "name": "Skrzynia",
+        "out": {
+          "chest": 1
+        },
+        "pattern": [
+          "PPP",
+          "P P",
+          "PPP"
+        ],
+        "key": {
+          "P": "planks"
+        }
+      },
+      {
+        "name": "3× Drewniane drzwi",
+        "out": {
+          "wood_door": 3
+        },
+        "pattern": [
+          "PP",
+          "PP",
+          "PP"
+        ],
+        "key": {
+          "P": "planks"
+        }
+      },
+      {
+        "name": "4× Drewniane schodki",
+        "out": {
+          "wood_stairs": 4
+        },
+        "pattern": [
+          "P  ",
+          "PP ",
+          "PPP"
+        ],
+        "key": {
+          "P": "planks"
+        },
+        "mirror": true
+      },
+      {
+        "name": "3× Drewniane ogrodzenie",
+        "out": {
+          "wood_fence": 3
+        },
+        "pattern": [
+          "PSP",
+          "PSP"
+        ],
+        "key": {
+          "P": "planks",
+          "S": "stick"
+        }
+      },
+      {
+        "name": "Żelazny kilof",
+        "out": {
+          "pickaxe": 1
+        },
+        "pattern": [
+          "III",
+          " S ",
+          " S "
+        ],
+        "key": {
+          "I": "iron_ingot",
+          "S": "stick"
+        }
+      },
+      {
+        "name": "Żelazna siekiera",
+        "out": {
+          "axe": 1
+        },
+        "pattern": [
+          "II ",
+          "IS ",
+          " S "
+        ],
+        "key": {
+          "I": "iron_ingot",
+          "S": "stick"
+        },
+        "mirror": true
+      },
+      {
+        "name": "Żelazna łopata",
+        "out": {
+          "shovel": 1
+        },
+        "pattern": [
+          "I",
+          "S",
+          "S"
+        ],
+        "key": {
+          "I": "iron_ingot",
+          "S": "stick"
+        }
+      },
+      {
+        "name": "Żelazny miecz",
+        "out": {
+          "sword": 1
+        },
+        "pattern": [
+          "I",
+          "I",
+          "S"
+        ],
+        "key": {
+          "I": "iron_ingot",
+          "S": "stick"
+        }
+      },
+      {
+        "name": "Złoty kilof",
+        "out": {
+          "gold_pickaxe": 1
+        },
+        "pattern": [
+          "GGG",
+          " S ",
+          " S "
+        ],
+        "key": {
+          "G": "gold_ingot",
+          "S": "stick"
+        }
+      },
+      {
+        "name": "Złota siekiera",
+        "out": {
+          "gold_axe": 1
+        },
+        "pattern": [
+          "GG ",
+          "GS ",
+          " S "
+        ],
+        "key": {
+          "G": "gold_ingot",
+          "S": "stick"
+        },
+        "mirror": true
+      },
+      {
+        "name": "Złota łopata",
+        "out": {
+          "gold_shovel": 1
+        },
+        "pattern": [
+          "G",
+          "S",
+          "S"
+        ],
+        "key": {
+          "G": "gold_ingot",
+          "S": "stick"
+        }
+      },
+      {
+        "name": "Złoty miecz",
+        "out": {
+          "gold_sword": 1
+        },
+        "pattern": [
+          "G",
+          "G",
+          "S"
+        ],
+        "key": {
+          "G": "gold_ingot",
+          "S": "stick"
+        }
+      },
+      {
+        "name": "Blok żelaza",
+        "out": {
+          "iron_block": 1
+        },
+        "pattern": [
+          "III",
+          "III",
+          "III"
+        ],
+        "key": {
+          "I": "iron_ingot"
+        }
+      },
+      {
+        "name": "9× Sztabka żelaza",
+        "out": {
+          "iron_ingot": 9
+        },
+        "pattern": [
+          "B"
+        ],
+        "key": {
+          "B": "iron_block"
+        }
+      },
+      {
+        "name": "Blok złota",
+        "out": {
+          "gold_block": 1
+        },
+        "pattern": [
+          "GGG",
+          "GGG",
+          "GGG"
+        ],
+        "key": {
+          "G": "gold_ingot"
+        }
+      },
+      {
+        "name": "9× Sztabka złota",
+        "out": {
+          "gold_ingot": 9
+        },
+        "pattern": [
+          "B"
+        ],
+        "key": {
+          "B": "gold_block"
+        }
+      },
+      {
+        "name": "Bandaż",
+        "out": {
+          "bandage": 1
+        },
+        "shapeless": {
+          "leaves": 3,
+          "roots": 1
+        }
+      },
+      {
+        "name": "Skóra z 4 króliczych skórek",
+        "out": {
+          "leather": 1
+        },
+        "pattern": [
+          "RR",
+          "RR"
+        ],
+        "key": {
+          "R": "rabbit_hide"
+        }
+      },
+      {
+        "name": "Powróz",
+        "out": {
+          "rope": 2
+        },
+        "pattern": [
+          "RR",
+          "RR"
+        ],
+        "key": {
+          "R": "roots"
+        }
+      },
+      {
+        "name": "Śpiwór",
+        "out": {
+          "bedroll": 1
+        },
+        "pattern": [
+          "LLL",
+          "PPP"
+        ],
+        "key": {
+          "L": "leather",
+          "P": "planks"
+        }
+      },
+      {
+        "name": "Skórzana czapka",
+        "out": {
+          "leather_head": 1
+        },
+        "pattern": [
+          "LLL",
+          "L L"
+        ],
+        "key": {
+          "L": "leather"
+        }
+      },
+      {
+        "name": "Skórzana zbroja",
+        "out": {
+          "leather_chest": 1
+        },
+        "pattern": [
+          "L L",
+          "LLL",
+          "LLL"
+        ],
+        "key": {
+          "L": "leather"
+        }
+      },
+      {
+        "name": "Skórzane nogawice",
+        "out": {
+          "leather_legs": 1
+        },
+        "pattern": [
+          "LLL",
+          "L L",
+          "L L"
+        ],
+        "key": {
+          "L": "leather"
+        }
+      },
+      {
+        "name": "Skórzane buty",
+        "out": {
+          "leather_feet": 1
+        },
+        "pattern": [
+          "L L",
+          "L L"
+        ],
+        "key": {
+          "L": "leather"
+        }
+      },
+      {
+        "name": "Żelazny hełm",
+        "out": {
+          "iron_head": 1
+        },
+        "pattern": [
+          "III",
+          "I I"
+        ],
+        "key": {
+          "I": "iron_ingot"
+        }
+      },
+      {
+        "name": "Żelazny pancerz",
+        "out": {
+          "iron_chest": 1
+        },
+        "pattern": [
+          "I I",
+          "III",
+          "III"
+        ],
+        "key": {
+          "I": "iron_ingot"
+        }
+      },
+      {
+        "name": "Żelazne nogawice",
+        "out": {
+          "iron_legs": 1
+        },
+        "pattern": [
+          "III",
+          "I I",
+          "I I"
+        ],
+        "key": {
+          "I": "iron_ingot"
+        }
+      },
+      {
+        "name": "Żelazne buty",
+        "out": {
+          "iron_feet": 1
+        },
+        "pattern": [
+          "I I",
+          "I I"
+        ],
+        "key": {
+          "I": "iron_ingot"
+        }
+      }
+    ],
+    "mobs": {
+      "wolf": {
+        "name": "wilk popielny",
+        "hp": 30,
+        "speed": 4.15,
+        "damage": 12,
+        "aggro": 25,
+        "color": [
+          0.19,
+          0.18,
+          0.17,
+          1
+        ],
+        "night": false,
+        "radius": 0.42,
+        "height": 0.58,
+        "drop": 1
+      },
+      "boar": {
+        "name": "dzik bagienny",
+        "hp": 44,
+        "speed": 3.05,
+        "damage": 16,
+        "aggro": 18,
+        "color": [
+          0.18,
+          0.105,
+          0.07,
+          1
+        ],
+        "night": false,
+        "radius": 0.58,
+        "height": 0.58,
+        "drop": 2
+      },
+      "deer": {
+        "name": "jeleń",
+        "hp": 34,
+        "speed": 4.25,
+        "damage": 0,
+        "aggro": 0,
+        "color": [
+          0.3,
+          0.18,
+          0.1,
+          1
+        ],
+        "night": false,
+        "radius": 0.46,
+        "height": 0.78,
+        "drop": 2,
+        "passive": true
+      },
+      "doe": {
+        "name": "sarna",
+        "hp": 26,
+        "speed": 4.45,
+        "damage": 0,
+        "aggro": 0,
+        "color": [
+          0.36,
+          0.23,
+          0.14,
+          1
+        ],
+        "night": false,
+        "radius": 0.39,
+        "height": 0.66,
+        "drop": 1,
+        "passive": true
+      },
+      "rabbit": {
+        "name": "królik",
+        "hp": 10,
+        "speed": 3.85,
+        "damage": 0,
+        "aggro": 0,
+        "color": [
+          0.42,
+          0.39,
+          0.34,
+          1
+        ],
+        "night": false,
+        "radius": 0.22,
+        "height": 0.28,
+        "drop": 1,
+        "passive": true
+      },
+      "chicken": {
+        "name": "dziki kurak",
+        "hp": 12,
+        "speed": 2.25,
+        "damage": 0,
+        "aggro": 0,
+        "color": [
+          0.55,
+          0.49,
+          0.39,
+          1
+        ],
+        "night": false,
+        "radius": 0.24,
+        "height": 0.32,
+        "drop": 1,
+        "passive": true
+      },
+      "cow": {
+        "name": "dzikie bydło",
+        "hp": 48,
+        "speed": 2.45,
+        "damage": 0,
+        "aggro": 0,
+        "color": [
+          0.28,
+          0.22,
+          0.17,
+          1
+        ],
+        "night": false,
+        "radius": 0.58,
+        "height": 0.72,
+        "drop": 3,
+        "passive": true
+      },
+      "horse": {
+        "name": "dziki koń",
+        "hp": 45,
+        "speed": 4.35,
+        "damage": 0,
+        "aggro": 0,
+        "color": [
+          0.34,
+          0.2,
+          0.11,
+          1
+        ],
+        "night": false,
+        "radius": 0.52,
+        "height": 0.82,
+        "drop": 2,
+        "passive": true
+      },
+      "moose": {
+        "name": "łoś",
+        "hp": 68,
+        "speed": 3.55,
+        "damage": 0,
+        "aggro": 0,
+        "color": [
+          0.25,
+          0.16,
+          0.1,
+          1
+        ],
+        "night": false,
+        "radius": 0.62,
+        "height": 1.02,
+        "drop": 3,
+        "passive": true
+      },
+      "sheep": {
+        "name": "owca",
+        "hp": 28,
+        "speed": 2.9,
+        "damage": 0,
+        "aggro": 0,
+        "color": [
+          0.62,
+          0.61,
+          0.55,
+          1
+        ],
+        "night": false,
+        "radius": 0.46,
+        "height": 0.6,
+        "drop": 2,
+        "passive": true
+      },
+      "fox": {
+        "name": "lis",
+        "hp": 18,
+        "speed": 4.65,
+        "damage": 0,
+        "aggro": 0,
+        "color": [
+          0.55,
+          0.24,
+          0.09,
+          1
+        ],
+        "night": false,
+        "radius": 0.31,
+        "height": 0.42,
+        "drop": 1,
+        "passive": true
+      },
+      "hyena": {
+        "name": "hiena",
+        "hp": 36,
+        "speed": 4.25,
+        "damage": 11,
+        "aggro": 21,
+        "color": [
+          0.39,
+          0.31,
+          0.18,
+          1
+        ],
+        "night": false,
+        "radius": 0.4,
+        "height": 0.54,
+        "drop": 1
+      },
+      "bear": {
+        "name": "czarny niedźwiedź",
+        "hp": 78,
+        "speed": 3.25,
+        "damage": 23,
+        "aggro": 16,
+        "color": [
+          0.075,
+          0.068,
+          0.06,
+          1
+        ],
+        "night": false,
+        "radius": 0.72,
+        "height": 0.9,
+        "drop": 3
+      },
+      "crawler": {
+        "name": "pełzacz",
+        "hp": 38,
+        "speed": 4.7,
+        "damage": 14,
+        "aggro": 30,
+        "color": [
+          0.055,
+          0.07,
+          0.061,
+          1
+        ],
+        "night": true,
+        "radius": 0.46,
+        "height": 0.42,
+        "drop": 1
+      },
+      "watcher": {
+        "name": "obserwator",
+        "hp": 62,
+        "speed": 3.75,
+        "damage": 20,
+        "aggro": 40,
+        "color": [
+          0.025,
+          0.029,
+          0.027,
+          1
+        ],
+        "night": true,
+        "radius": 0.34,
+        "height": 1.45,
+        "drop": 1
+      },
+      "wraith": {
+        "name": "głodny cień",
+        "hp": 46,
+        "speed": 5.2,
+        "damage": 17,
+        "aggro": 36,
+        "color": [
+          0.035,
+          0.04,
+          0.052,
+          1
+        ],
+        "night": true,
+        "radius": 0.36,
+        "height": 1.1,
+        "drop": 0
+      }
+    }
+  },
+  "chunks": {
+    "golden-forest-1:0,0": "53fad6460ceba292bafc0213e2194d50978caf826cfbef18dd7039bb6cafa70e",
+    "golden-forest-1:1,-1": "f7787ee22ffb68d88270b355bdb946b7af5d81a0eef4d4f514e68dc07e38cdad",
+    "golden-forest-1:-2,3": "c40410d39e0a8ee5802b80d6116a66e5b1504351f233ca6dc6c5ced546145a1e",
+    "ice-cliffs-321:0,0": "2cea4f22569c020449da84bcb6d081905692dd60e45fa47d5f9eef61d53afdcf",
+    "ice-cliffs-321:1,-1": "eaccfec43f5ed898a241b1247ce9e3bb7086d323af58e0a5bddc016da49dee34",
+    "ice-cliffs-321:-2,3": "4070a4be8c3a3bee15fca1ff78133646f059e1d8ce32e5cd7a3e30c6a3bd24f8",
+    "river-delta-0:0,0": "24cbc53b5f07f5f893ec6243b6f0982e9c26086041bd9fd3e34385a78ecf9274",
+    "river-delta-0:1,-1": "cc53e2197bb63b2ec772532c07bc237cbd0b728ce18386bf77c240af8da4af56",
+    "river-delta-0:-2,3": "10b4ccc08e07d1a48190a435c0b867be6864d8fffd8306ee10ef9ef66783a6d7"
+  }
+}

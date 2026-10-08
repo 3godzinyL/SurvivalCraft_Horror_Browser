@@ -1,0 +1,11 @@
+{
+  "name": "nightcraft-cold-forest",
+  "private": true,
+  "version": "15.1.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.cjs",
+    "check": "node tools/check-modules.mjs && node tools/validate-data.mjs && node tests/data_parity.mjs && node tests/worker_parity.mjs && node tests/worker_roundtrip.mjs && node tests/ai_navigation.mjs && node tests/save_migration.mjs && node tests/windows_launcher.mjs",
+    "ids": "node tools/gen-ids.mjs"
+  }
+}

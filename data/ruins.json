@@ -1,0 +1,20 @@
+{
+  "types": [
+    "crumbled_tower",
+    "broken_cottage",
+    "stone_arch",
+    "graveyard",
+    "stone_circle",
+    "roadside_shrine",
+    "watchpost",
+    "collapsed_hall",
+    "cellar_mouth",
+    "broken_wall",
+    "ash_camp",
+    "rune_altar",
+    "old_well",
+    "gatehouse",
+    "buried_temple",
+    "fallen_monument"
+  ]
+}

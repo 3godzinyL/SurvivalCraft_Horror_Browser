@@ -1,112 +1,59 @@
-# NightCraft V10 — 3×3 Inventory Crafting + URP-like Visual Pass
+# NightCraft — Cold Forest V15.1 · modular architecture
 
-V10 replaces the old 2×2 crafting grid with a full 3×3 grid directly inside the player inventory. Recipes are now spatial/shaped in the Minecraft style (including mirrored axe/stair layouts), there is no separate crafting-table requirement, and the recipe book lays the real shape into the grid instead of bypassing it. The renderer also gets a lightweight URP-inspired pass: moving cloud-light modulation, cooler color grading, stronger hemispheric face lighting, and soft layered contact shadows under creatures and dropped items.
+Pełna przeglądarkowa gra survival-horror oparta na WebGL1, bez bundlera. V15 przenosi runtime z jednego pliku `game.js` do **31 modułów ES**, dodaje deklaratywne dane, worker chunków, testy zgodności V14, zapis IndexedDB i poprawia AI/starter kit. Wszystkie istniejące światy bazują na **tych samych numerach bloków**.
 
-# NightCraft: Cold Forest — V9
+## Uruchomienie (Windows / Windows Server)
 
-Samodzielny voxel survival-horror do uruchomienia w przeglądarce. V9 jest dużym pass-em jakościowym skupionym na fizyce gracza po odrodzeniu, zachowaniu inventory/craftingu, tempie kopania, feedbacku niszczenia, fizycznych dropach oraz pełniejszym systemie audio materiałów.
+1. Rozpakuj **cały** ZIP.
+2. Uruchom `START_WINDOWS.bat` **z rozpakowanego folderu**, a nie z podglądu archiwum ZIP. Nie trzeba uruchamiać jako administrator.
+3. Launcher wybierze automatycznie **Node.js 20+** (zalecany) albo wbudowany w Windows **PowerShell 5.1** (awaryjny serwer HTTP, nie wymaga instalacji Node). Nie trzeba `npm install` ani Rust.
+4. Przeglądarka sama otworzy `http://127.0.0.1:8177/` po uruchomieniu serwera. Jeśli przeglądarka się nie otworzy, wklej adres ręcznie. **Pozostaw okno serwera otwarte podczas gry.**
 
-## Uruchomienie
+Alternatywnie: `node server.cjs` albo `npm start`. W razie problemu otwórz `DIAGNOSTYKA_WINDOWS.bat`. Błędy serwera i launchera są zapisywane w `logs/server.log` i `logs/launcher.log` (powstają przy starcie). Jeśli port 8177 jest zajęty, zamknij poprzedni serwer. **Nie otwieraj `index.html` przez `file://`**, bo natywne moduły, worker, shadery i dane wymagają serwera HTTP. Dźwięk odblokowuje pierwszy gest użytkownika.
 
-Windows: uruchom `START_WINDOWS.bat`.
+## Nowości w V15
 
-Ręcznie:
+- **Dwa różne, losowane skórzane elementy zbroi od razu założone** (hełm, pancerz, spodnie lub buty) z własnym początkowym zużyciem. Losowanie jest deterministyczne względem seeda. Każde z czterech startowych drewnianych narzędzi też ma inne zużycie i stopniowo je traci przy działaniu.
+- **AI wilków i pozostałych mobów**: poprawka martwego zakrętu; bez wymuszonego obracania o ~140° przy braku drogi. Zatrzymanie, replanning A*, sprawdzanie wysokości stopnia, skok tylko przy możliwym wejściu. Test obejmuje zamknięty korytarz i skok na blok.
+- **World streaming**: natywny worker ES generujący chunki JS, z przekazywaniem `ArrayBuffer`, kontrolą tokenu seeda, deduplikacją żądań, nakładaniem zapisanych edycji na wynik i awaryjną synchroniczną generacją. Wynik identyczny z V14 dla 9 chunków / 3 seedów (SHA-256 pełnych 24 576 bajtów każdego chunka).
+- **Dane:** JSON dla bloków, itemów, craftingów, mobów, biomów, ruin, audio i lokalizacji PL. `data/ids.lock` blokuje zmianę istniejących ID. Meta bloków JS: solid / transparent / decor / top / side / bottom.
+- **Render:** dwa programy WebGL mają źródła w czterech plikach `.glsl`; atlas pozostaje proceduralny, a `data/texture-overrides.json` pozwala podstawić PNG o danej nazwie `tile_NNN` bez zmiany indeksu/ID.
+- **Zapis:** IndexedDB (`nightcraft-worlds`), kolejkowanie transakcji, import starych kluczy localStorage, migracje V7/V14 do wersji 19 bez zmiany edycji świata ani numerów bloków.
+- **Rdzenny Rust:** prawdziwe pliki `Cargo.toml`, `crates/world-core/src/lib.rs`, `world-wasm` z eksportami `init`, `generate_chunk`, `mesh_chunk`; packed mesh 32-bit, 3D AO i flood-fill oświetlenia, testy jednostkowe w źródle.
 
-1. `node server.js`
-2. wejdź na `http://127.0.0.1:8177`
+## Ważne ograniczenie dotyczące Rust/WASM
 
-Dźwięk w nowoczesnej przeglądarce zostaje odblokowany po pierwszym kliknięciu/klawiszu.
+**W tej paczce nie ma skompilowanego `.wasm`.** W środowisku budowania nie było `cargo`/`rustc` i nie mogłem ich pobrać ani wykonać `cargo test`. Rustowy generator jest na razie **eksperymentalnym szkieletem**, nie odtwarza jeszcze dokładnie generatora V14. Dlatego nie jest włączony w rozgrywce. Grę obsługuje sprawdzony golden-testami **generator JS w workerze**; w razie braku workerów działa synchroniczny JS. Nie wolno przełączyć świata na eksperymentalny Rust worldgen bez identycznych golden hashy, bo zepsuje to istniejące światy. Polecenie `tools/build-wasm.sh` na maszynie z Rust buduje prototyp; samo skompilowanie **nie aktywuje** go automatycznie.
 
-## V9 — najważniejsze poprawki
-
-### Respawn i kolizje
-
-- usunięty został błąd w bazowym teście AABB, przez który podłoże mogło być liczone jako kolizja całego gracza;
-- respawn ładuje obszar wokół zapamiętanego punktu startowego i szuka faktycznie wolnej kapsuły dla całego modelu gracza;
-- jeśli okolica spawnu została zabudowana, wybierane jest najbliższe bezpieczne miejsce;
-- awaryjny resolver potrafi oczyścić kieszeń spawnu zamiast zostawić gracza zakleszczonego;
-- test V9 celowo blokuje pierwotny spawn, respawnuje gracza, sprawdza brak kolizji i wykonuje realny mikro-ruch po respawnie.
-
-### Crafting / inventory
-
-- receptury 2×2 nie wymagają już identycznej liczby sztuk w stacku; przykładowo stack `5× drewno` poprawnie pokazuje recepturę `1× drewno -> 4× deski`;
-- pojedyncze craftowanie zużywa tylko jedną porcję receptury i zostawia resztę stacka;
-- Shift na wyniku craftuje maksymalną możliwą liczbę partii ograniczoną materiałami i miejscem w inventory;
-- PPM dzieli stack, a PPM-przeciąganie rozkłada po jednej sztuce po kolejnych slotach;
-- Shift+klik przy przenoszeniu inventory <-> hotbar najpierw uzupełnia istniejące stacki, dopiero potem zajmuje puste sloty;
-- dodawanie przedmiotów jest atomowe: brak miejsca nie powoduje częściowego dodania i utraty/duplikacji;
-- slot wejściowy pieca przyjmuje tylko rzeczy z receptur przepalania, paliwo tylko prawdziwe paliwo, a output nie przyjmuje ręcznie wkładanych itemów.
-
-### Balans kopania
-
-Drewniane narzędzia zostały spowolnione:
-
-- drewniany kilof: `1.30`,
-- drewniana siekiera: `1.28`,
-- drewniana łopata: `1.42`.
-
-Właściwe narzędzie nadal daje wyraźną przewagę, ale drewniany start nie topi terenu w absurdalnym tempie. Każdy zwykły blok pozostaje możliwy do wykopania niewłaściwym narzędziem lub ręką — trwa to po prostu dłużej.
-
-### Niszczenie bloków
-
-- pęknięcia pojawiają się praktycznie od początku (`>0.1%` progresu), nie dopiero pod koniec;
-- wczesny etap cracków jest celowo mocniej widoczny dzięki nieliniowej krzywej;
-- przy zmianie celu timer odłamków jest zerowany, więc pierwszy odprysk pojawia się od razu;
-- cząsteczki korzystają z rodziny materiału bloku i mają różne kolory;
-- po zniszczeniu blok NIE teleportuje się już bezpośrednio do inventory.
-
-### Fizyczne dropy jak w voxel survivalu
-
-Wykopany blok:
-
-- wyskakuje z bloku z prędkością początkową,
-- spada z grawitacją,
-- odbija się od ziemi,
-- obraca się i delikatnie bobbuje,
-- po krótkim opóźnieniu jest przyciągany do gracza,
-- odtwarza osobny pickup sound,
-- jeśli inventory jest pełne, pozostała część stacka zostaje na ziemi,
-- pobliskie stacki tego samego itemu mogą się łączyć,
-- dropy są zapisywane razem ze światem.
-
-Loot z rozbitej skrzyni, pieca oraz dropy części mobów również korzystają z tego systemu.
-
-### Audio V9
-
-System nie używa już jednego ogólnego odgłosu kamienia/drewna dla większości świata. V9 generuje i ładuje 16 rodzin materiałowych:
-
-`grass`, `dirt`, `mud`, `clay`, `stone`, `cobble`, `brick`, `wood`, `plank`, `sand`, `snow`, `gravel`, `leaves`, `glass`, `metal`, `ore`.
-
-Dla każdej rodziny są:
-
-- 2 warianty `hit`,
-- 2 warianty `break`,
-- 2 warianty `place`,
-- 2 warianty kroków.
-
-To daje **128 material-specific WAV** tylko dla interakcji z blokami/podłożem, plus pickup i pozostałe ambienty/efekty z wcześniejszych wersji. Pnie i deski brzmią inaczej, bruk inaczej od gładkiego kamienia, cegły inaczej od skały, błoto inaczej od ziemi itd.
-
-Wszystkie nowe sample są lokalnymi, oryginalnie syntetyzowanymi assetami tego projektu.
-
-## Zachowane systemy
-
-V9 zachowuje systemy V8/V7: pełny piec i przetapianie żelaza/złota/szkła/kamienia, węgiel/żelazo/złoto w świecie, crafting metalowych narzędzi, 6-poziomowe fortyfikacje niszczone przez agresywne stworzenia, drzwi/schody/płoty z własnymi kolizjami, pełnoekranową mapę `M`, licznik dystansu, starter chest, proceduralne ruiny, jaskinie/mineshafty, pogodę, noc, threat/stress, minimapę, ptaki, zwierzęta, horror mobs, pochodnie i zapis świata.
+Oznacza to, że podział projektu, JSON-y, shadery, worker, AI i IndexedDB są zaimplementowane, ale **pełny produkcyjny port worldgen+mesh pipeline do WASM i renderingu wierzchołków spakowanych nie jest jeszcze skończony**. Zobacz `ARCHITECTURE.md`.
 
 ## Testy
 
-Najważniejszy test V9:
+`npm run check` (Node.js, bez zależności z npm):
 
-`node tests/runtime_smoke_v9.js`
+- kontrola składni modułów;
+- spójność ID, danych, receptur, nazw, plików audio;
+- głębokie porównanie definicji bloków / itemów / receptur / mobów z V14;
+- **9 deterministycznych hashy chunków** z 3 seedów V14;
+- roundtrip workera, transfer, odrzucenie starego seeda, edycje świata;
+- nawigacja moba: zamknięty korytarz i skok przez jeden blok;
+- migracja zapisów V7/V14, zgodność edycji oraz ekwipunku;
+- kontrola launchera i HTTP serwera dla plików JS/GLSL/JSON/audio.
 
-Wykonuje prawdziwy `src/game.js` w kontrolowanym harnessie DOM/WebGL i sprawdza zarówno regresję V8, jak i nowe zachowania V9, w tym:
+Dodatkowo przetestowano start gry w Chromium z zastępczym WebGL (weryfikacja HUD/startowego wyposażenia), lecz nie było możliwości pełnego testu grafiki na GPU ani uruchomienia bezpośrednich modułów HTTP w zablokowanym środowisku przeglądarki.
 
-- bezpieczny respawn bez kolizji,
-- możliwość ruchu po respawnie,
-- crafting z nadmiarowym stackiem,
-- fizyczny drop i pickup,
-- wolniejsze drewniane narzędzia,
-- wczesne pęknięcia/odłamki,
-- 128 material-specific plików audio,
-- przepalanie, rudy, fortyfikacje, drzwi/schody/płoty, inventory, ruiny, mapę i starsze systemy.
+## Sterowanie i wcześniejsze systemy
 
-`tests/generate_block_audio_v9.py` jest źródłem generatora nowych efektów materiałowych.
+WASD — ruch · Spacja — skok/pływanie · Shift — sprint · Ctrl — skradaj · LPM — kop/atak · PPM — użyj/stawiaj · E — ekwipunek/crafting · X — skan X-Ray (od poziomu 1) · 1–9 — hotbar · M — mapa · Esc — pauza · F3 — debug.
+
+Zachowano deszcz z kolizjami i rozbryzgami, ambient i grzmoty, skrzynie i ruiny, dwuslotowy śpiwór, głód, crafting, pancerz, dropy mobów, wilcze zmysły, system poziomów i radar z HUD trwałości pancerza.
+
+## Eksport atlasu
+
+Po uruchomieniu serwera otwórz `http://127.0.0.1:8177/tools/bake-atlas.html`, a następnie kliknij **Zapisz atlas PNG**. Narzędzie działa w przeglądarce, więc nie wymaga osobnego pakietu canvas dla Node.
+
+## Naprawa startu w V15.1
+
+W V15 plik `.bat` otwierał osobne okno (`start ... cmd /k`) i sam kończył działanie, więc użytkownik nie widział błędów uruchomienia. W V15.1 serwer działa na pierwszym planie w tym samym oknie, a zakończenie działania wymaga potwierdzenia klawiszem. Jeśli brakuje Node 20+, serwer wystartuje przez PowerShell (`tools/serve-windows.ps1`), obsługując moduły ES, shadery, JSON, audio i żądania zakresowe WAV.
+
+**Uwagi:** serwer PowerShell działa lokalnie tylko na `127.0.0.1` i może być wolniejszy od Node. Weryfikacja skryptów PowerShell na Windows musi zostać wykonana na komputerze z Windows; w środowisku testowym dostępny był tylko Node na Linux. Niezmienne pozostają światy, identyfikatory bloków, wszystkie dane gry i logika rozgrywki.

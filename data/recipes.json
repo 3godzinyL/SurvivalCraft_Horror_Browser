@@ -1,0 +1,490 @@
+[
+  {
+    "out": {
+      "planks": 4
+    },
+    "pattern": [
+      "L"
+    ],
+    "key": {
+      "L": [
+        "wood",
+        "pinewood",
+        "birchwood",
+        "darkwood",
+        "willowwood",
+        "poplarwood",
+        "mimosawood",
+        "deadwood"
+      ]
+    }
+  },
+  {
+    "out": {
+      "stick": 4
+    },
+    "pattern": [
+      "P",
+      "P"
+    ],
+    "key": {
+      "P": "planks"
+    }
+  },
+  {
+    "out": {
+      "wood_pickaxe": 1
+    },
+    "pattern": [
+      "PPP",
+      " S ",
+      " S "
+    ],
+    "key": {
+      "P": "planks",
+      "S": "stick"
+    }
+  },
+  {
+    "out": {
+      "wood_axe": 1
+    },
+    "pattern": [
+      "PP ",
+      "PS ",
+      " S "
+    ],
+    "key": {
+      "P": "planks",
+      "S": "stick"
+    },
+    "mirror": true
+  },
+  {
+    "out": {
+      "wood_shovel": 1
+    },
+    "pattern": [
+      "P",
+      "S",
+      "S"
+    ],
+    "key": {
+      "P": "planks",
+      "S": "stick"
+    }
+  },
+  {
+    "out": {
+      "wood_sword": 1
+    },
+    "pattern": [
+      "P",
+      "P",
+      "S"
+    ],
+    "key": {
+      "P": "planks",
+      "S": "stick"
+    }
+  },
+  {
+    "out": {
+      "stone_bricks": 4
+    },
+    "pattern": [
+      "SS",
+      "SS"
+    ],
+    "key": {
+      "S": "smooth_stone"
+    }
+  },
+  {
+    "out": {
+      "torch": 4
+    },
+    "pattern": [
+      "C",
+      "S"
+    ],
+    "key": {
+      "C": "coal",
+      "S": "stick"
+    }
+  },
+  {
+    "out": {
+      "furnace": 1
+    },
+    "pattern": [
+      "CCC",
+      "C C",
+      "CCC"
+    ],
+    "key": {
+      "C": "cobble"
+    }
+  },
+  {
+    "out": {
+      "chest": 1
+    },
+    "pattern": [
+      "PPP",
+      "P P",
+      "PPP"
+    ],
+    "key": {
+      "P": "planks"
+    }
+  },
+  {
+    "out": {
+      "wood_door": 3
+    },
+    "pattern": [
+      "PP",
+      "PP",
+      "PP"
+    ],
+    "key": {
+      "P": "planks"
+    }
+  },
+  {
+    "out": {
+      "wood_stairs": 4
+    },
+    "pattern": [
+      "P  ",
+      "PP ",
+      "PPP"
+    ],
+    "key": {
+      "P": "planks"
+    },
+    "mirror": true
+  },
+  {
+    "out": {
+      "wood_fence": 3
+    },
+    "pattern": [
+      "PSP",
+      "PSP"
+    ],
+    "key": {
+      "P": "planks",
+      "S": "stick"
+    }
+  },
+  {
+    "out": {
+      "pickaxe": 1
+    },
+    "pattern": [
+      "III",
+      " S ",
+      " S "
+    ],
+    "key": {
+      "I": "iron_ingot",
+      "S": "stick"
+    }
+  },
+  {
+    "out": {
+      "axe": 1
+    },
+    "pattern": [
+      "II ",
+      "IS ",
+      " S "
+    ],
+    "key": {
+      "I": "iron_ingot",
+      "S": "stick"
+    },
+    "mirror": true
+  },
+  {
+    "out": {
+      "shovel": 1
+    },
+    "pattern": [
+      "I",
+      "S",
+      "S"
+    ],
+    "key": {
+      "I": "iron_ingot",
+      "S": "stick"
+    }
+  },
+  {
+    "out": {
+      "sword": 1
+    },
+    "pattern": [
+      "I",
+      "I",
+      "S"
+    ],
+    "key": {
+      "I": "iron_ingot",
+      "S": "stick"
+    }
+  },
+  {
+    "out": {
+      "gold_pickaxe": 1
+    },
+    "pattern": [
+      "GGG",
+      " S ",
+      " S "
+    ],
+    "key": {
+      "G": "gold_ingot",
+      "S": "stick"
+    }
+  },
+  {
+    "out": {
+      "gold_axe": 1
+    },
+    "pattern": [
+      "GG ",
+      "GS ",
+      " S "
+    ],
+    "key": {
+      "G": "gold_ingot",
+      "S": "stick"
+    },
+    "mirror": true
+  },
+  {
+    "out": {
+      "gold_shovel": 1
+    },
+    "pattern": [
+      "G",
+      "S",
+      "S"
+    ],
+    "key": {
+      "G": "gold_ingot",
+      "S": "stick"
+    }
+  },
+  {
+    "out": {
+      "gold_sword": 1
+    },
+    "pattern": [
+      "G",
+      "G",
+      "S"
+    ],
+    "key": {
+      "G": "gold_ingot",
+      "S": "stick"
+    }
+  },
+  {
+    "out": {
+      "iron_block": 1
+    },
+    "pattern": [
+      "III",
+      "III",
+      "III"
+    ],
+    "key": {
+      "I": "iron_ingot"
+    }
+  },
+  {
+    "out": {
+      "iron_ingot": 9
+    },
+    "pattern": [
+      "B"
+    ],
+    "key": {
+      "B": "iron_block"
+    }
+  },
+  {
+    "out": {
+      "gold_block": 1
+    },
+    "pattern": [
+      "GGG",
+      "GGG",
+      "GGG"
+    ],
+    "key": {
+      "G": "gold_ingot"
+    }
+  },
+  {
+    "out": {
+      "gold_ingot": 9
+    },
+    "pattern": [
+      "B"
+    ],
+    "key": {
+      "B": "gold_block"
+    }
+  },
+  {
+    "out": {
+      "bandage": 1
+    },
+    "shapeless": {
+      "leaves": 3,
+      "roots": 1
+    }
+  },
+  {
+    "out": {
+      "leather": 1
+    },
+    "pattern": [
+      "RR",
+      "RR"
+    ],
+    "key": {
+      "R": "rabbit_hide"
+    }
+  },
+  {
+    "out": {
+      "rope": 2
+    },
+    "pattern": [
+      "RR",
+      "RR"
+    ],
+    "key": {
+      "R": "roots"
+    }
+  },
+  {
+    "out": {
+      "bedroll": 1
+    },
+    "pattern": [
+      "LLL",
+      "PPP"
+    ],
+    "key": {
+      "L": "leather",
+      "P": "planks"
+    }
+  },
+  {
+    "out": {
+      "leather_head": 1
+    },
+    "pattern": [
+      "LLL",
+      "L L"
+    ],
+    "key": {
+      "L": "leather"
+    }
+  },
+  {
+    "out": {
+      "leather_chest": 1
+    },
+    "pattern": [
+      "L L",
+      "LLL",
+      "LLL"
+    ],
+    "key": {
+      "L": "leather"
+    }
+  },
+  {
+    "out": {
+      "leather_legs": 1
+    },
+    "pattern": [
+      "LLL",
+      "L L",
+      "L L"
+    ],
+    "key": {
+      "L": "leather"
+    }
+  },
+  {
+    "out": {
+      "leather_feet": 1
+    },
+    "pattern": [
+      "L L",
+      "L L"
+    ],
+    "key": {
+      "L": "leather"
+    }
+  },
+  {
+    "out": {
+      "iron_head": 1
+    },
+    "pattern": [
+      "III",
+      "I I"
+    ],
+    "key": {
+      "I": "iron_ingot"
+    }
+  },
+  {
+    "out": {
+      "iron_chest": 1
+    },
+    "pattern": [
+      "I I",
+      "III",
+      "III"
+    ],
+    "key": {
+      "I": "iron_ingot"
+    }
+  },
+  {
+    "out": {
+      "iron_legs": 1
+    },
+    "pattern": [
+      "III",
+      "I I",
+      "I I"
+    ],
+    "key": {
+      "I": "iron_ingot"
+    }
+  },
+  {
+    "out": {
+      "iron_feet": 1
+    },
+    "pattern": [
+      "I I",
+      "I I"
+    ],
+    "key": {
+      "I": "iron_ingot"
+    }
+  }
+]

@@ -1,0 +1,22 @@
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><title>NightCraft — Bake Atlas</title>
+<style>body{margin:0;display:grid;place-content:center;min-height:100vh;background:#0b1111;color:#ded0a8;font:16px system-ui;text-align:center}main{padding:35px;border:1px solid #94733c;border-radius:18px;background:#181d1a}button{background:#99773a;color:#10100c;border:0;border-radius:8px;font-size:17px;font-weight:800;padding:13px 26px;cursor:pointer}button:disabled{opacity:.45}#preview{margin:auto;display:block;image-rendering:pixelated;max-width:90vw;max-height:45vh}iframe{position:fixed;left:-20000px;width:800px;height:600px;pointer-events:none}</style></head><body>
+<main><h1>NightCraft · Procedural Atlas Baker</h1><p id="status">Ładowanie silnika i tekstur…</p><canvas id="preview"></canvas><p><button id="download" disabled>Zapisz atlas PNG</button></p><small>24×24 px, 8 kolumn × 14 rzędów. Po uruchomieniu gry przez HTTP.</small></main>
+<iframe src="/" id="game" title="Procedural atlas generator"></iframe>
+<script type="module">
+const frame=document.querySelector('#game'),button=document.querySelector('#download'),status=document.querySelector('#status'),preview=document.querySelector('#preview');
+const canvas=preview.getContext('2d');canvas.imageSmoothingEnabled=false;
+let timer=0;const started=Date.now();
+frame.addEventListener('load',()=>{
+ timer=setInterval(()=>{
+  const engine=frame.contentWindow?.__NIGHTCRAFT_ENGINE__;
+  if(engine?.atlas?.canvas){
+   clearInterval(timer);const atlas=engine.atlas.canvas;
+   preview.width=atlas.width*2;preview.height=atlas.height*2;
+   canvas.drawImage(atlas,0,0,preview.width,preview.height);
+   status.textContent=`Wygenerowano ${atlas.width}×${atlas.height} px.`;
+   button.disabled=false;
+   button.onclick=()=>atlas.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='nightcraft-atlas.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000)},'image/png');
+  } else if(Date.now()-started>25000){clearInterval(timer);status.textContent='Nie udało się zbudować atlasu. Otwórz grę i sprawdź konsolę.';}
+ },150);
+});
+</script></body></html>
