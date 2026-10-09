@@ -1,11 +1,11 @@
 {
   "name": "nightcraft-cold-forest",
   "private": true,
-  "version": "25.0.2",
+  "version": "35.1.0",
   "type": "module",
   "scripts": {
     "start": "node server.cjs",
-    "check": "node tools/check-modules.mjs && node tools/validate-data.mjs && node tests/data_parity.mjs && node tests/worker_parity.mjs && node tests/worker_roundtrip.mjs && node tests/ai_navigation.mjs && node tests/v16_maze.mjs && node tests/v16_features.mjs && node tests/save_migration.mjs && node tests/windows_launcher.mjs && node tests/v17_features.mjs && node tests/v17_1_menu.mjs && node tests/v18_features.mjs && node tests/v18_1_fixes.mjs && node tests/v19_features.mjs && node tests/v20_features.mjs && node tests/v21_features.mjs && node tests/v22_features.mjs && node tests/multiplayer.mjs && node tests/windows_spawn_paths.mjs && node tests/ngrok_direct_join.mjs && node tests/desktop_host.mjs",
+    "check": "node tools/check-modules.mjs && node tools/validate-data.mjs && node tests/data_parity.mjs && node tests/worker_parity.mjs && node tests/worker_roundtrip.mjs && node tests/ai_navigation.mjs && node tests/v16_maze.mjs && node tests/v16_features.mjs && node tests/save_migration.mjs && node tests/windows_launcher.mjs && node tests/v17_features.mjs && node tests/v17_1_menu.mjs && node tests/v18_features.mjs && node tests/v18_1_fixes.mjs && node tests/v19_features.mjs && node tests/v20_features.mjs && node tests/v21_features.mjs && node tests/v22_features.mjs && node tests/multiplayer.mjs && node tests/windows_spawn_paths.mjs && node tests/ngrok_direct_join.mjs && node tests/desktop_host.mjs && node tests/v26_village.mjs && node tests/v26_network.mjs && node tests/v27_mill_features.mjs && node tests/v28_visual_navigation.mjs && node tests/v28_1_spawn_input_hotfix.mjs && node tests/v28_1_runtime_input_regression.mjs && node tests/v31_full_village_overhaul.mjs && node tests/v32_nature_render.mjs && node tests/v33_horror_performance.mjs && node tests/v34_lighting.mjs && node tests/v35_graphics.mjs && node tests/v35_1_texture_reflections.mjs",
     "ids": "node tools/gen-ids.mjs",
     "pages:build": "node tools/prepare-pages.mjs",
     "pages:test": "node tests/github_pages.mjs",
@@ -14,7 +14,7 @@
     "desktop:win": "electron-builder --win portable --x64",
     "desktop:dir": "electron-builder --win dir --x64"
   },
-  "description": "NightCraft V25: standalone Electron desktop and multiplayer/ngrok host",
+  "description": "NightCraft V35.1: sharp nearby textures, perforated foliage and camera-synchronous water reflections",
   "main": "electron/main.cjs",
   "devDependencies": {
     "electron": "37.2.3",
@@ -33,6 +33,7 @@
       "styles-waypoint.css",
       "styles-multiplayer.css",
       "styles-desktop.css",
+      "styles-village.css",
       "electron/**/*",
       "src/**/*",
       "data/**/*",
@@ -55,11 +56,11 @@
           ]
         }
       ],
-      "artifactName": "NightCraft_V25_Desktop_${version}_Windows_x64.${ext}",
+      "artifactName": "NightCraft_V35_1_Desktop_${version}_Windows_x64.${ext}",
       "icon": "electron/icon.ico"
     },
     "portable": {
-      "artifactName": "NightCraft_V25_Desktop_${version}_Windows_x64.${ext}"
+      "artifactName": "NightCraft_V35_1_Desktop_${version}_Windows_x64.${ext}"
     }
   }
 }

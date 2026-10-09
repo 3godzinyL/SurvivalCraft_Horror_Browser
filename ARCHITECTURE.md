@@ -161,3 +161,12 @@ sieciowa nie zastępuje jeszcze lokalnej symulacji NPC/ekwipunków.
 Zachowano natywne ES modules i strukturę V24. `electron/main.cjs` obsługuje tylko okno Chromium, uruchamia lokalny HTTP z plikami gry, zablokowany na `127.0.0.1`, a następnie `electron/preload.cjs` wystawia bezpieczne metody IPC hostowania. W rendererze NodeIntegration pozostaje wyłączone, contextIsolation i sandbox pozostają włączone. `electron/host-service.cjs` jest testowalny przez zwykły Node, uruchamia `multiplayer/server.cjs` przez child process i opcjonalnie ngrok. W aplikacji spakowanej multiplayer/server.cjs jest kopią `extraResources` obok app.asar, a jego stan znajduje się w katalogu Electron userData, nie w plikach programu.
 
 Strona offline korzysta z pamięci IndexedDB osobnego profilu aplikacji. Lokalny origin HTTP ma stały port 8177 (jeśli jest zajęty, aplikacja uruchamia inną lokalną instancję i informuje w logu). Wersje dla GitHub Pages i START_WINDOWS.bat wciąż są dostępne. W V25 nie został przeniesiony PvE na serwer; synchroniczne są tylko istniejące w V24 części protokołu.
+
+
+## NightCraft V26 · rozdzielenie osady od starej generacji
+
+`src/world/village-worldgen.js` zawiera czyste funkcje wybierania wyspy, kształtu terenu, wyznaczania zabudowy i niezależnego stampowania chunków. Nowy algorytm włącza się tylko przy `worldgenVersion >= 26`. `src/world/worker/world-worker.js` dostaje ten sam `villagePlan` co główny wątek, więc budynki nie powinny przecinać się na granicach chunków. Zachowane są ID wszystkich istniejących 95 bloków; nowe projekty budowlane są wyłącznie przedmiotami w JSON.
+
+`src/sim/village.js` zawiera symulację mieszkańców, rajd nocny, automatyczne prace w osadzie, strażników i materiały konstrukcyjne. Każdy prefabrykat to wieloblokowa zmiana w tym samym world API; lokalne edycje i lista domów są zapisywane. `src/ui/village-ui.js` i `styles-village.css` zawierają niezależne UI dziennika/ warsztatu. Grafiki księgi to statyczne SVG w `assets/illustrations`, także do offline i Pages.
+
+`src/net/multiplayer.js` wysyła prefabrykaty zbiorczo; `multiplayer/server.cjs` sprawdza liczbę, współrzędne i typy bloków, zapisuje edycje i rozsyła je współgraczom. **Serwer nie zarządza jeszcze AI osadników, zdarzeniami najazdu ani stanem surowców osady.** Te mechaniki pozostają symulacją lokalną. Niezależne testy: `tests/v26_village.mjs`, `tests/v26_network.mjs`.

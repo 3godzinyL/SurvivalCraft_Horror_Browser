@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const out=path.join(project,'dist-pages');
-const runtime=['index.html','style.css','styles-waypoint.css','styles-multiplayer.css','.nojekyll','src/main.js','src/data/loader.js','src/world/worker/world-worker.js','src/render/shaders/voxel.frag.glsl','data/blocks.json','data/lang/pl.json','data/texture-overrides.json','data/multiplayer.json','src/net/multiplayer.js','assets/favicon.svg','assets/audio/bird.wav'];
+const runtime=['index.html','style.css','styles-waypoint.css','styles-multiplayer.css','styles-village.css','.nojekyll','src/main.js','src/data/loader.js','src/world/worker/world-worker.js','src/render/shaders/voxel.frag.glsl','data/blocks.json','data/lang/pl.json','data/texture-overrides.json','data/multiplayer.json','src/net/multiplayer.js','assets/favicon.svg','assets/audio/bird.wav'];
 for (const file of runtime) assert(existsSync(path.join(out,file)),`Missing GitHub Pages runtime asset: ${file}`);
 assert(!existsSync(path.join(out,'server.cjs')) && !existsSync(path.join(out,'START_WINDOWS.bat')) && !existsSync(path.join(out,'crates')), 'Only static client runtime should be published');
 const html=readFileSync(path.join(out,'index.html'),'utf8');

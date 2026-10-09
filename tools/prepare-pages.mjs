@@ -10,7 +10,7 @@ import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const output=path.join(root,'dist-pages');
 const dirs=['src','data','assets'];
-const files=['index.html','style.css','styles-waypoint.css','styles-multiplayer.css','styles-desktop.css'];
+const files=['index.html','style.css','styles-waypoint.css','styles-multiplayer.css','styles-desktop.css','styles-village.css'];
 if (!files.every(f=>existsSync(path.join(root,f))) || !dirs.every(d=>existsSync(path.join(root,d))))
   throw Error('Missing game runtime files (unpack the complete project before publishing)');
 rmSync(output,{recursive:true,force:true});

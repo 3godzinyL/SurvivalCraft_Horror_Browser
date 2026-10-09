@@ -323,3 +323,18 @@ body:after{content:"";position:fixed;inset:0;pointer-events:none;z-index:12;back
 .inv-slot,.equip-slot,.hotbar-slot,#hotbar .slot{position:relative}
 .durability-track{position:absolute;left:12%;right:12%;bottom:3px;height:4px;border-radius:3px;background:rgba(0,0,0,.78);box-shadow:0 0 0 1px rgba(0,0,0,.48);overflow:hidden;pointer-events:none;z-index:4}
 .durability-fill{display:block;height:100%;border-radius:3px;transition:width .12s linear;box-shadow:0 0 4px rgba(230,240,217,.22)}
+
+.codex-entry-catalog{display:flex;align-items:center;gap:13px;min-height:96px;padding:12px;border:1px solid #58513c;background:linear-gradient(105deg,#20251b,#10170f)}
+.codex-stage-line{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
+.codex-stage{padding:6px 9px;border:1px solid #756347;color:#e0cba3;font:11px Georgia,serif;background:#25241b}
+.codex-entry-catalog strong{color:#f2d79e;font:15px Georgia,serif}
+.codex-entry-catalog small{color:#bfb9a5;font:11px/1.6 system-ui}
+#codexUpgrades,#codexBuildings{font-weight:700}
+
+.codex-swatch-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px}.codex-swatch-row .codex-product{width:40px;height:40px}.codex-swatch-row canvas{width:34px!important;height:34px!important}
+
+/* V34: daylight panorama stays visible around the readable menu card. */
+#mainMenu.screen{background:linear-gradient(90deg,rgba(4,9,6,.12),rgba(4,9,6,.12)),linear-gradient(0deg,rgba(2,5,3,.24),transparent 65%)}
+
+.graphics-panel{position:fixed;inset:0;z-index:1200;background:rgba(3,6,5,.84);display:grid;place-items:center;padding:20px}.graphics-card{width:min(720px,100%);max-height:90vh;overflow:auto;background:#101612;border:1px solid #58614d;padding:26px;color:#cbd0c2}.graphics-card header{display:flex;align-items:center;justify-content:space-between}.graphics-card h2{font-size:20px}.graphics-presets{display:flex;gap:8px;margin:12px 0 22px}.graphics-card .settings-grid{grid-template-columns:1fr 1fr;gap:18px}.graphics-card select{width:100%;margin-top:7px}.graphics-check{display:flex;align-items:center;gap:10px}.graphics-launch{width:100%;margin:10px 0}.graphics-card p{font-size:12px;line-height:1.6;color:#939d89}@media(max-width:650px){.graphics-card .settings-grid{grid-template-columns:1fr}}
+.graphics-card .settings-grid label:has(input[type="checkbox"]){display:flex;align-items:center;gap:10px}.graphics-card .settings-grid input[type="checkbox"]{width:18px;height:18px;margin:0;order:-1;accent-color:#9d9b68}

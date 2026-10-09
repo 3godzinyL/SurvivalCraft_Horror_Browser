@@ -53,7 +53,7 @@ U.scanCooldown=0;U.xp=450;U.activateXray();
 assert.ok(U.player.health>65,'higher X skills heal more');assert.ok(U.scanDuration>19,'duration increases with level');
 const fragment=fs.readFileSync(new URL('../src/render/shaders/voxel.frag.glsl',import.meta.url),'utf8');
 const vertex=fs.readFileSync(new URL('../src/render/shaders/voxel.vert.glsl',import.meta.url),'utf8');
-assert.match(vertex,/uniform mediump float uWater/);assert.match(vertex,/swell=/);assert.match(fragment,/foam=smoothstep/);
+assert.match(vertex,/uniform mediump float uWater/);assert.match(vertex,/swell=/);assert.match(fragment,/waveNormal=normalize/);assert.match(fragment,/float fres=pow/);
 const input=fs.readFileSync(new URL('../src/ui/inventory.js',import.meta.url),'utf8');
 assert.match(input,/S.clearInventoryHover/);assert.match(input,/S\.waypoint = S\.waypoint/);assert.match(input,/ev.button===2/);
 const mini=fs.readFileSync(new URL('../src/ui/minimap.js',import.meta.url),'utf8');

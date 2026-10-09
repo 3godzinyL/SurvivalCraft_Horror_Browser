@@ -31,7 +31,7 @@ assert.equal(uploads,1,'should upload once, not every frame after finishing');
 for(let i=0;i<20;i++) S.updateSunShadows(.016);
 assert.equal(uploads,1,'do not re-upload unchanged pixels every frame');
 S.player.pos[0]+=32;S.updateSunShadows(.016);
-assert.equal(S.sunShadow.valid,false,'on relocation stale shadow texture must be hidden');
+assert.equal(S.sunShadow.valid,true,'retain completed map during relocation to avoid lighting flashes');
 for(let i=0;i<22;i++) S.updateSunShadows(.016);
 assert.equal(uploads,2);
 

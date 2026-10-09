@@ -1,0 +1,83 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {loadGameData} from '../src/data/loader.js';
+import {install as math} from '../src/math/matrix.js';
+import {install as noise} from '../src/world/noise.js';
+import {install as registry} from '../src/data/registry.js';
+import {install as worldgen} from '../src/world/worldgen.js';
+import {install as worldApi} from '../src/world/world-api.js';
+import {install as structures} from '../src/sim/structures.js';
+import {install as village,updateVillagerAI} from '../src/sim/village.js';
+import {buildUserStructure,selectVillageSite,BUILDINGS} from '../src/world/village-worldgen.js';
+import {VILLAGE_PLANS,VILLAGE_KIT_KINDS,VILLAGE_KIT_ID,kitKindFromItem} from '../src/world/village-plans.js';
+
+const root=new URL('../',import.meta.url);
+globalThis.fetch=async url=>({ok:true,json:async()=>JSON.parse(fs.readFileSync(url instanceof URL?url:new URL(String(url),root),'utf8'))});
+const d=await loadGameData();
+for(const [kind,plan] of Object.entries(VILLAGE_PLANS)){
+  assert.ok(d.items[VILLAGE_KIT_ID(kind)],`item ${kind}`);
+  assert.equal(kitKindFromItem(VILLAGE_KIT_ID(kind)),kind);
+  assert.ok(plan.size.every(n=>n>=1&&n<20));
+  assert.ok(Object.values(plan.cost).every(n=>n>=1));
+  assert.ok(d.lang.pl.items[VILLAGE_KIT_ID(kind)]);
+}
+assert.equal(VILLAGE_KIT_KINDS.length,8);
+const S={GAME_DATA:d};math(S);noise(S);registry(S);worldgen(S);worldApi(S);structures(S);village(S);
+S.worldSeed=S.hashString('v31-integrated');S.worldgenVersion=26;S.player={pos:[0,32,0],yaw:0};
+S.villagePlan=selectVillageSite(S,S.player.pos);const v=S.villagePlan;
+S.player.pos=[v.x+.5,v.y+1,v.z+6.5];S.running=true;S.paused=false;S.worldSeconds=800;S.DAY_SECONDS=1200;
+S.currentWorldHour=()=>14;S.enemies=[];S.sfx=()=>{};S.showMessage=()=>{};S.saveGame=()=>{};
+S.UI={villageResources:{textContent:''},villagePopulation:{textContent:''},villageHouseBtn:{disabled:false},villageWallBtn:{disabled:false},villageRepairBtn:{disabled:false},villageUpgradeBtn:{disabled:false,textContent:''}};
+const stash={wood:1200,cobble:600,iron_ingot:200};const inventory={};
+S.countItem=id=>(stash[id]||0)+(inventory[id]||0);
+S.removeItem=(id,n)=>{if(stash[id]>=n){stash[id]-=n;return true;}inventory[id]=(inventory[id]||0)-n;return true;};
+S.addItem=(id,n)=>{inventory[id]=(inventory[id]||0)+n;return true;};S.inventoryCapacity=()=>32;
+for(const [kind,plan] of Object.entries(VILLAGE_PLANS)){
+  const before={...stash};
+  assert.equal(S.craftVillageKit(kind),true,`chief can sell ${kind}`);
+  assert.equal(inventory[VILLAGE_KIT_ID(kind)],1,`real item returned for ${kind}`);
+  assert.equal(stash.wood,before.wood-(plan.cost.wood||0));
+  assert.equal(stash.cobble,before.cobble-(plan.cost.stone||0));
+  assert.equal(stash.iron_ingot,before.iron_ingot-(plan.cost.iron||0));
+  const edits=[];
+  buildUserStructure(S,kind,v.x+26,v.y+1,v.z+10,(...r)=>edits.push(r));
+  assert.ok(edits.length>=(kind==='wall'?9:21),`${kind} generator must produce nonempty real structure`);
+  assert.ok(edits.every(r=>r.length===4&&Number.isInteger(r[3])&&r[3]>=0&&r[3]<256));
+}
+assert.ok(BUILDINGS.some(b=>b.type==='hall'&&b.dx>0),'third smaller building should be to the right');
+// True world update and farm plot regeneration.
+for(let cx=S.floorDiv(v.x-48,16);cx<=S.floorDiv(v.x+48,16);cx++)for(let cz=S.floorDiv(v.z-48,16);cz<=S.floorDiv(v.z+48,16);cz++)S.ensureChunk(cx,cz);
+updateVillagerAI(S,.05);
+assert.equal(v.citizens.length,7);
+assert.equal(v.citizens[0].pos[0],v.x+.5,'chief never wanders away');
+assert.equal(v.citizens[0].pos[2],v.z+5.5,'chief stays at indoor workplace');
+assert.ok(v.farms?.[0]?.plots?.length>15,'farmer has persistent independent crop plots');
+const ripe=v.farms[0].plots[0];ripe.growth=1;
+const farmer=v.citizens[4];farmer.pos=[ripe.x+.5,v.y+1,ripe.z+.5];
+const beforeFood=v.food||0;updateVillagerAI(S,.05);
+assert.ok(ripe.growth<.5,'ripe crop harvested and replanted');
+assert.ok(v.food>beforeFood,'harvest increases actual village stores');
+assert.equal(v.farms[0].harvestCount,1);
+// Creating a forge prefab must place persistent blocks and unlock real orders.
+let batchSize=0;S.netBroadcastVillageBatch=edits=>{batchSize=edits.length;};
+S.villageBuildPreview=()=>({kind:'forge',x:v.x+37,y:v.y+1,z:v.z+15,axis:'x',ok:true});
+assert.equal(S.placeVillageKit(),true,'forge item is placeable');
+assert.ok(batchSize>100,'placing forge sends actual world edits');
+assert.equal(inventory.village_forge_kit,0,'used kit consumed');
+assert.ok(v.buildings.some(b=>b.type==='forge'));
+const ironBefore=stash.iron_ingot;
+assert.equal(S.villageBlacksmithCraft('sword'),true,'smith creates real iron sword');
+assert.equal(stash.iron_ingot,ironBefore-5);
+assert.equal(inventory.sword,1);
+const saved=structuredClone(v);S.restoreVillageQuest(saved);
+assert.equal(S.villagePlan.farms[0].harvestCount,1,'farm state persisted');
+assert.ok(S.villagePlan.buildings.some(b=>b.type==='forge'),'new structures persisted');
+assert.ok(S.villagePlan.farms[0].plots.every(p=>p.growth>=0&&p.growth<=1));
+const frag=fs.readFileSync(new URL('../src/render/shaders/voxel.frag.glsl',import.meta.url),'utf8');
+assert.match(frag,/uLightPos\[12\]/);assert.match(frag,/uLightStrength\[12\]/);
+const weather=fs.readFileSync(new URL('../src/render/weather.js',import.meta.url),'utf8');
+assert.match(weather,/waterBoost \? 5\.6 : 3\.15/);
+assert.match(weather,/ControlLeft.*ControlRight/);assert.doesNotMatch(weather,/ControlLeft.*KeyC/);
+const sky=fs.readFileSync(new URL('../src/render/gl.js',import.meta.url),'utf8');assert.match(sky,/skyProgram/);
+const codex=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');assert.match(codex,/codexUpgrades/);assert.match(codex,/codexBuildings/);
+console.log('V31_OVERHAUL_PASS 8 paid craftable prefabs, new hall, NPC fixed indoor station, crop harvest/replant/save, 12-lamp lighting, swimming, sky and codex');

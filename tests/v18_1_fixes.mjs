@@ -9,7 +9,7 @@ const files = path => readFileSync(new URL('../'+path,import.meta.url),'utf8');
 // bottom vertices must use v=1 -- V18 accidentally inverted these twice.
 const atlas=files('src/render/gl.js');
 assert.match(atlas,/pixelStorei\(S\.gl\.UNPACK_FLIP_Y_WEBGL, false\)/);
-assert.match(atlas,/paint\(1,.*?if \(y < 6\)/s);
+assert.match(atlas,/paint\(1,.*?const moss=y<4/s);
 const renderer=files('src/render/held-block.js');
 assert.doesNotMatch(renderer,/1\s*-\s*fuv\[i\]\[1\]/,'grass faces must not be inverted again');
 const gl={getAttribLocation(){return 0;},getUniformLocation(){return {};}};

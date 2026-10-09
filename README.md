@@ -1,40 +1,31 @@
-# NightCraft Cold Forest · V25 — Desktop + multiplayer ngrok
+# NightCraft Cold Forest — V35.1
 
-## Główna wersja: Windows EXE z własnym Chromium
+Pełny projekt aktualnej wersji: źródła, zasoby, testy, gotowa gra Windows i statyczna wersja przeglądarkowa.
 
-- **`BUILD_WINDOWS_EXE.bat`**: pobiera zależności na Windows i generuje przenośny plik EXE w `dist-desktop/`. Wymagany Node.js 20+ **tylko podczas budowania**, nie u gracza.
-- **`.github/workflows/windows-desktop.yml`**: alternatywnie automatycznie buduje ten sam EXE na GitHub Actions (Windows). Wystarczy udostępnić projekt w repozytorium i pobrać artefakt z Actions.
-- **`START_DESKTOP_DEV.bat`**: uruchomienie programistyczne przez Electron bez generowania EXE (wymaga npm i Internetu przy pierwszym uruchomieniu).
-- **`DESKTOP_I_NGROK_INSTRUKCJA.md`**: pełna instrukcja hostowania z menu i dołączania po adresie ngrok.
+## Uruchomienie
 
-## Menu desktop
+- Windows: `dist-desktop/NightCraft_V35_1_Desktop_35.1.0_Windows_x64.exe`. Nie wymaga instalowania Node.js.
+- Przeglądarka lokalna: `START_WINDOWS.bat` lub `npm start`, następnie http://127.0.0.1:8177.
+- Programowanie: `npm ci`, następnie `npm run desktop` albo `npm start`. Wymagany Node.js 20+.
+- Budowanie EXE: `BUILD_WINDOWS_EXE.bat` lub `npm run desktop:win` po instalacji zależności.
+- GitHub Pages: `npm run pages:build`, `npm run pages:test`; gotowe pliki znajdują się w `dist-pages/`. Szczegóły: [instrukcja Pages](GITHUB_PAGES_INSTRUKCJA.md).
 
-**START OFFLINE**, **KONTYNUUJ OFFLINE**, **HOSTUJ GRĘ**, **DOŁĄCZ DO GRY**. Hostowanie uruchamia prywatny serwer Node w procesie pomocniczym bez dodatkowego terminala. Jeśli ngrok jest zainstalowany i skonfigurowany, aplikacja spróbuje wystartować tunel; w przeciwnym razie pokaże komendę z aktualnym portem. Host wpisuje lub kopiuje HTTPS ngroka, inni gracze wklejają go do menu. TAB: nicki i koordynaty. Host utrzymuje zapis współdzielonych bloków na swoim dysku.
+## Grafika i sterowanie
 
-**To nie jest jeszcze pełna synchronizacja AI, przedmiotów ani obrażeń PvE** — pozostała logika V24. Różnice w wydajności GPU nadal mogą wystąpić, ale wszystkie desktopowe kopie korzystają z tego samego Chromium.
+Domyślny zasięg to 12 chunków, ustawienia grafiki pozwalają zwiększyć go do 24. Przytrzymanie C przybliża widok. Domyślny seed nowych światów: `hollow-pines-317`.
 
-## Pozostałe tryby
+V35.1 zachowuje ostre tekstury z bliska i filtrowanie odległych materiałów, dodaje nieregularne prześwity liści oraz synchronizuje odbicia wody z ruchem kamery. Szczegóły i wyniki w [raporcie aktualnej wersji](V35_1_OSTROSC_I_ODBICIA_PL.md).
 
-- `START_WINDOWS.bat`: dotychczasowy lokalny serwer i zwykła przeglądarka (bez zmian).
-- `START_SERVER.bat`: ręczne uruchamianie serwera na Node bez Electrona (opcjonalne).
-- GitHub Pages: statyczna wersja dla osób chcących grać w przeglądarce, nadal bez możliwości hostowania samego serwera na Pages.
+Księga w grze opisuje rozgrywkę. G otwiera misje, V warsztat osady, M mapę szlaku. Prawy przycisk myszy stawia wybrany blok lub prefabrykat.
 
-## Struktura i testy
+## Multiplayer
 
-`electron/main.cjs` — okno Chromium i zabezpieczony IPC; `electron/preload.cjs` — wąski most do uruchamiania hosta; `electron/host-service.cjs` — start serwera i tunelu; `electron/static-server.cjs` — lokalne zasoby gry; `src/ui/desktop-host.js` — menu. `src/net/multiplayer.js` i `multiplayer/server.cjs` — istniejący protokół co-op.
+Menu desktop pozwala hostować grę i dołączać do hosta. Instrukcja: [desktop i ngrok](DESKTOP_I_NGROK_INSTRUKCJA.md). Osobny serwer: `npm run multiplayer`.
 
-`npm run check` uruchamia wszystkie testy V14–V24 i nowy test hostowania V25.
+Synchronizowane są gracze i wspólne zmiany świata. AI, przedmioty i obrażenia PvE nie mają jeszcze pełnej synchronizacji. GitHub Pages udostępnia klienta, serwer multiplayer wymaga osobnego hosta.
 
-**Ważne:** dostarczany ZIP jest kompletnym projektem źródłowym, a nie już skompilowanym EXE. Środowisko tworzenia paczki nie ma dostępu do binariów Electron/npm. Po uruchomieniu workflow w GitHub Actions otrzymasz jeden przenośny Windows EXE do wysłania znajomym.
+## Sprawdzenie projektu
 
-## Hotfix V25.1 – Windows ENOENT podczas budowania
+`npm run check` uruchamia testy modułów, danych, generatora, migracji zapisów, mechanik, grafiki, multiplayer i hosta. Historyczne numery w nazwach testów oznaczają nadal potrzebne testy regresyjne.
 
-Naprawiono niepoprawne użycie `URL.pathname` jako katalogu roboczego w teście `ngrok_direct_join`. Na Windows ścieżka `/C:/...` powodowała błąd `spawn ... ENOENT` po zaliczeniu wcześniejszych testów. Test używa teraz `fileURLToPath`, bezpiecznej absolutnej ścieżki do serwera i przechwytuje błąd startu procesu. Dodano test regresyjny `windows_spawn_paths.mjs`.
-
-Aby utworzyć EXE, uruchom `BUILD_WINDOWS_EXE.bat` w rozpakowanym folderze; program wynikowy znajduje się w `dist-desktop`.
-
-## Hotfix V25.2 – zapis hosta Windows i stabilne testy
-
-Na Windows `ChildProcess.kill()` może natychmiast zakończyć proces Node bez uruchomienia procedury `SIGTERM`. Wtedy zmiana bloku przesłana do drugiego gracza niekoniecznie była zapisana w `SHAREDXX.json`, a `tests/desktop_host.mjs` zatrzymywał budowanie EXE. W V25.2 Electron wysyła lokalne, uwierzytelnione żądanie zamknięcia, czeka na zapis wszystkich pokojów i dopiero potem kończy proces. Sekret żądania jest losowy i nie jest dostępny z menu gry ani publicznego tunelu.
-
-Test hosta buforuje teraz wiadomości WebSocket (bez gubienia szybkiego `ready`) i sprawdza zakończenie hosta **przy nadal podłączonych graczach** oraz odczyt zmian po ponownym uruchomieniu. Raport: `TEST_REPORT_V25_2.txt`. Szczegóły: `HOTFIX_WINDOWS_HOST_SAVE.md`.
+Archiwum nie zawiera `node_modules`, prywatnych zapisów, logów, starych instalatorów ani roboczych katalogów budowania. `package-lock.json` umożliwia odtworzenie zależności przez `npm ci`.

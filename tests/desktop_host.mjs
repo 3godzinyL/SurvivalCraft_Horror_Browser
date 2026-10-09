@@ -19,7 +19,7 @@ function get(url){return new Promise((resolve,reject)=>{
 });}
 const web=await listen(root,0);
 try{
-  for(const file of ['index.html','styles-desktop.css','src/ui/desktop-host.js','src/net/multiplayer.js']){
+  for(const file of ['index.html','styles-desktop.css','styles-village.css','src/ui/desktop-host.js','src/net/multiplayer.js']){
     const res=await get(web.url+file);assert.equal(res.status,200,file);assert.ok(res.data.length>50,file);
   }
   assert.equal((await get(web.url+'electron/main.cjs')).status,403);

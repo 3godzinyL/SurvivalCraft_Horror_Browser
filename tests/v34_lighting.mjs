@@ -1,0 +1,38 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {buildSkyColumns,skyAt,selectChunkLights,lightFalloff,TORCH_POWER,TORCH_RADIUS,MAX_LIGHTS} from '../src/render/lighting.js';
+import {install as structures} from '../src/sim/structures.js';
+import {install as predators} from '../src/sim/mobs/predator-tactics.js';
+const blocks=JSON.parse(fs.readFileSync(new URL('../data/blocks.json',import.meta.url),'utf8')),B=blocks.ids;
+const S={B,CHUNK:16,WORLD_H:96,blockDefs:blocks.definitions,isFoliage:id=>id===B.LEAVES,idx3:(x,y,z)=>y*256+z*16+x,chunkKey:(x,z)=>x+','+z,chunks:new Map()};
+const c={cx:0,cz:0,data:new Uint8Array(16*16*96)};
+c.data[S.idx3(2,60,2)]=B.STONE;
+for(let y=60;y<65;y++)c.data[S.idx3(4,y,4)]=B.LEAVES;
+c.sky=buildSkyColumns(S,c);S.chunks.set('0,0',c);
+assert.equal(skyAt(S,[2.5,30,2.5]),0,'solid roof blocks skylight');
+assert.ok(skyAt(S,[4.5,30,4.5])>.5,'five leaf layers retain diffuse skylight');
+assert.equal(skyAt(S,[2.5,61,2.5]),1,'outside roof remains exposed');
+const before=skyAt(S,[2.5,30,2.5]);S.sunShadow={valid:false,origin:[999,999]};assert.equal(skyAt(S,[2.5,30,2.5]),before,'streaming sun map cannot brighten an interior');
+// Exercise diffuse side probes with real opaque walls.
+for(let y=30;y<=60;y++)for(let z=1;z<=5;z++)for(let x=1;x<=5;x++)
+  if(y===60||x===1||x===5||z===1||z===5)c.data[S.idx3(x,y,z)]=B.STONE;
+c.data[S.idx3(8,60,8)]=B.STONE;c.sky=buildSkyColumns(S,c);
+S.peekLoadedBlock=(x,y,z)=>c.data[S.idx3(x,y,z)]??B.AIR;
+assert.equal(skyAt(S,[3.5,31,3.5]),0,'side probes stop at closed walls');
+assert.ok(skyAt(S,[8.5,31,8.5])>.7,'eaves receive lateral diffuse sky');
+const edge=[22.5,30,15.5,TORCH_POWER];
+assert.ok(selectChunkLights([edge],0,0,16,[15.5,30,15.5]).includes(edge),'lamp near far corner affects chunk although far from its centre');
+const lamps=Array.from({length:16},(_,i)=>[i,30,2,TORCH_POWER]);
+const selected=selectChunkLights(lamps,0,0,16,[.5,30,2]);
+assert.equal(selected.length,MAX_LIGHTS);assert.deepEqual(selected[0],lamps[8],'chunk-centred lamp survives crowded selection');assert.deepEqual(selectChunkLights(lamps,0,0,16,[15,30,15]),selected,'moving the camera never changes a chunk lamp set');
+for(const distance of [0,1,3,6,7.2,8])assert.equal(lightFalloff(distance,TORCH_POWER),lightFalloff(distance,1),'held and placed power match');
+assert.equal(lightFalloff(TORCH_RADIUS),0);assert.ok(lightFalloff(1)>lightFalloff(4));
+const F={B,blockDefs:blocks.definitions,fortifications:new Map(),edits:new Map(),getBlock:()=>B.WOOD_DOOR,villagePlan:{x:0,z:0},player:{pos:[0,2,0]},enemyDefs:{wolf:{damage:12}},worldSeconds:0,sfx(){},spawnDebris(){},showMessage(){},soundMaterialForBlock:()=> 'plank'};
+structures(F);predators(F);
+const iron=F.ensureFortification(1,2,1,B.WOOD_DOOR,true);assert.equal(iron.tier,5);assert.equal(iron.maxHp,700);
+F.villagePlan=null;F.edits.set('2,2,2',B.WOOD_DOOR);
+const wood=F.ensureFortification(2,2,2,B.WOOD_DOOR,true);assert.equal(wood.tier,0);
+const wolf={type:'wolf',pos:[2,2,1],attack:0};
+assert.equal(F.damageObstacleByPredator(wolf,{damage:12,name:'wilk'},{x:2,y:2,z:2,id:B.WOOD_DOOR}),true);
+assert.ok(wood.maxHp-wood.hp<1.1);assert.ok(wolf.attack>=3,'door attacks have a sustained cooldown');
+console.log('V34_LIGHTING_PASS solid roofs, transmitting canopy, shadow refresh independence, edge/crowded lamps, torch parity, iron village doors, slow wolf attacks');

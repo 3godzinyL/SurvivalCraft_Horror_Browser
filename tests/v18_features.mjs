@@ -15,7 +15,7 @@ const data=await loadGameData();
 const gl={getAttribLocation:()=>0,getUniformLocation:()=>({})};
 const S={GAME_DATA:data,gl,makeProgram:()=>({}),atlas:{tile:24,cols:8,rows:14}};
 math(S);noise(S);registry(S);worldgen(S);S.blockTile=data.blocks.numericTiles;worldapi(S);chunkRender(S);
-assert.equal(S.renderDistance,12,'new world should default to 12 chunks');
+assert.equal(S.renderDistance,12,'V35 defaults to the requested 12 chunks');
 assert.ok(S.isBillboardPlant(S.B.RED_FLOWER));
 let P=[],N=[],U=[],W=[];
 S.pushDecorMesh(P,N,U,W,13,30,24,S.B.RED_FLOWER);
@@ -29,6 +29,7 @@ const requests=[],requestKeys=new Set();
 S.chunkWorker={ready:true,setFocus(){},isRequested:(x,z)=>requestKeys.has(`${x},${z}`),request:(x,z)=>{const k=`${x},${z}`;if(requestKeys.has(k))return true;requestKeys.add(k);requests.push(k);return true;}};
 S.ensureChunk=(x,z)=>S.chunks.set(S.chunkKey(x,z),{cx:x,cz:z,opaque:null,water:null});
 S.deleteMesh=()=>{};S.processDirty=()=>{};
+S.renderDistance=12; // streaming budget regression at the default distance
 S.updateStreaming(0,0,false);
 assert.ok(requests.length>0&&requests.length<=12,'bounded initial worker batch');
 S.updateStreaming(0,0,true); // request an immediate scan; ordinary frames are deliberately throttled
@@ -65,8 +66,8 @@ const styles=fs.readFileSync(new URL('../style.css',import.meta.url),'utf8');
 assert.match(html,/<option value="12" selected>/);
 assert.match(styles,/#mainMenu\.screen\{justify-content:center;/);
 const vertex=fs.readFileSync(new URL('../src/render/shaders/voxel.vert.glsl',import.meta.url),'utf8');
-assert.match(vertex,/uniform mediump vec3 uCam/);assert.match(vertex,/aWind>\.98/);
-console.log('V18_FEATURES_PASS 12-chunk prioritization, 2-sided billboards, waving grass, new terrain deterministic, saved torches, separate wolf flank lanes, centered menu');
+assert.match(vertex,/uniform highp vec3 uCam/);assert.match(vertex,/aWind>\.98/);
+console.log('V18_FEATURES_PASS configurable 2-chunk prioritization, 2-sided billboards, waving grass, new terrain deterministic, saved torches, separate wolf flank lanes, centered menu');
 
 // Loading the mesh border must NEVER eagerly generate unloaded neighbours.
 {

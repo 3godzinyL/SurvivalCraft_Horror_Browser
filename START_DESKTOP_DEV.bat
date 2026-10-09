@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-title NightCraft V25 - DESKTOP DEV
+title NightCraft V26 - DESKTOP DEV
 where node.exe >nul 2>nul
 if errorlevel 1 goto :NONODE
 if not exist "node_modules\electron\dist\electron.exe" (

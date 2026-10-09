@@ -31,4 +31,4 @@ server.on('error',err=>{
  logLine('ERROR',advice+' '+(err?.stack||err));
  process.exit(1);
 });
-server.listen(port,'127.0.0.1',()=>logLine('INFO','NightCraft V22 ready: http://127.0.0.1:'+port));
+server.listen(port,'127.0.0.1',()=>logLine('INFO','NightCraft V35.1 ready: http://127.0.0.1:'+port));

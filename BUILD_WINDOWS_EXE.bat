@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-title NightCraft V25.2 - BUDOWANIE EXE
+title NightCraft V26 - BUDOWANIE EXE
 where node.exe >nul 2>nul
 if errorlevel 1 goto :NONODE
 node -e "if(+process.versions.node.split('.')[0]<20)process.exit(1)"
@@ -9,7 +9,7 @@ if errorlevel 1 goto :NONODE
 where npm.cmd >nul 2>nul
 if errorlevel 1 goto :NONODE
 echo.
-echo ===== NIGHTCRAFT V25.2 - APLIKACJA WINDOWS =====
+echo ===== NIGHTCRAFT V26 - APLIKACJA WINDOWS =====
 echo Node uruchomiony z:
 where node.exe
 echo.

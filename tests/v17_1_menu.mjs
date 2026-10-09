@@ -7,7 +7,7 @@ const shader = (name) => readFileSync(new URL('../src/render/shaders/' + name, i
 for (const name of ['voxel.vert.glsl', 'voxel.frag.glsl']) {
   assert.match(shader(name), /uniform\s+mediump\s+float\s+uTime\s*;/, name + ' must match precision in both stages');
   for (const [kind, type] of [['vWorld','vec3'], ['vNormal','vec3'], ['vUV','vec2']])
-    assert.match(shader(name), new RegExp('varying\\s+mediump\\s+'+type+'\\s+'+kind+'\\s*;'));
+    assert.match(shader(name), new RegExp('varying\\s+'+(kind==='vWorld'||kind==='vUV'?'highp':'mediump')+'\\s+'+type+'\\s+'+kind+'\\s*;'));
 }
 for (const file of ['../src/render/held-block.js','../src/render/entities.js']) {
  const source=readFileSync(new URL(file,import.meta.url),'utf8');
@@ -45,7 +45,7 @@ S.renderMainMenuBackdrop();
 assert.equal(meshCalls.length,2,'terrain and river should make separate GPU buffers');
 assert.ok(meshCalls[0].count>9000,'a large real textured voxel landscape should be generated');
 assert.ok(meshCalls[1].count>100,'river should have textured, animated water geometry');
-assert.ok(meshCalls[0].windy>500,'trees and grass must sway in the shader');
+// Real terrain can put the first sector mostly underwater; check all built sectors below.
 assert.equal(drawCalls.length,2,'both water and terrain should be drawn');
 assert.ok(canvas.width>0 && canvas.height>0,'fallen-leaf overlay should resize and paint');
 S.renderMainMenuBackdrop();
@@ -56,7 +56,10 @@ assert.equal(S.menuPreviewInfo.totalChunks,576,'preview 24x24 chunk footprint');
 assert.equal(S.menuPreviewInfo.builtSectors,36,'all 36 GPU mesh sectors must stream in');
 assert.deepEqual(S.menuPreviewInfo.generatedBounds,{minX:-192,minZ:-192,maxX:192,maxZ:192},'preview must cover twelve chunks in all directions');
 assert.equal(meshCalls.length,72,'36 cached terrain and water meshes');
+assert.ok(meshCalls.reduce((sum,m)=>sum+m.windy,0)>1000,'production panorama contains animated vegetation');
+assert.equal(S.menuPreviewInfo.productionTerrain,true);
 const built=meshCalls.length;
 S.renderMainMenuBackdrop();
 assert.equal(meshCalls.length,built,'scene must be cached instead of rebuilding every frame');
 console.log(`V18_1_MENU_PASS radius=${S.menuPreviewInfo.chunkRadius} chunks=${S.menuPreviewInfo.totalChunks} sectors=${S.menuPreviewInfo.builtSectors} first=${meshCalls[0].count} last=${meshCalls.at(-2).count}; shaders + cached panorama`);
+
