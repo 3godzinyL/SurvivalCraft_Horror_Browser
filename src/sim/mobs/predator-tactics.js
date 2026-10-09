@@ -62,9 +62,9 @@ export function install(S) {
     if(current!==target.id||!S.canPredatorBreakBlock(e,current,target.x,target.y,target.z))return false;
     const f=S.ensureFortification(target.x,target.y,target.z,current,true);
     // Attack animation and impact are present for ALL predators.
-    e.attack=.82+(e.type==='wolf'?.25:0);e.impactAnim=.46;
+    e.attack=e.type==='wolf'&&current===S.B.WOOD_DOOR?3.2:e.type==='wolf'?1.07:.95;e.impactAnim=.46;
     e.velY=Math.max(e.velY||0,0);
-    if(f){S.damageFortification(target.x,target.y,target.z,Math.max(2.0,def.damage*.55),def.name);return true;}
+    if(f){S.damageFortification(target.x,target.y,target.z,e.type==='wolf'&&current===S.B.WOOD_DOOR?Math.max(.7,def.damage*.075):Math.max(2.0,def.damage*.55),def.name);return true;}
     let damage=S.enemyBlockDamage.get(key);
     if(!damage||damage.id!==current){const original=S.blockDefs[current]?.hard||1;damage={id:current,hp:Math.max(22,original*70),maxHp:Math.max(22,original*70),lastHit:0};}
     damage.hp-=Math.max(2.2,(def.damage||8)*.45);damage.lastHit=S.worldSeconds;S.enemyBlockDamage.set(key,damage);

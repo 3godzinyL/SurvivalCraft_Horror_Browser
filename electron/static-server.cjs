@@ -2,7 +2,7 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.svg':'image/svg+xml','.ico':'image/x-icon','.jpg':'image/jpeg','.webp':'image/webp','.json':'application/json; charset=utf-8','.wav':'audio/wav','.mp3':'audio/mpeg','.ogg':'audio/ogg','.wasm':'application/wasm','.glsl':'text/plain; charset=utf-8'};
-const files=new Set(['index.html','style.css','styles-waypoint.css','styles-multiplayer.css','styles-desktop.css','favicon.svg','favicon.ico']);
+const files=new Set(['index.html','style.css','styles-waypoint.css','styles-multiplayer.css','styles-desktop.css','styles-village.css','favicon.svg','favicon.ico']);
 function allowed(route){const p=route.slice(1);return files.has(p)||['src/','assets/','data/'].some(prefix=>p.startsWith(prefix));}
 function makeServer(root){return http.createServer((req,res)=>{
   if(req.method!=='GET'&&req.method!=='HEAD'){res.writeHead(405);return res.end();}

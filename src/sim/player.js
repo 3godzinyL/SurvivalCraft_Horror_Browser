@@ -359,7 +359,11 @@ S.movePlayerAxis = function movePlayerAxis(axis, delta) {
     }
     if ((axis === 0 || axis === 2) && Math.abs(delta) > .015) {
         S.player.impact = Math.min(1, S.player.impact + .34);
-        if (Math.random() < .08)
+        if (S.player.inWater) {
+            if (Math.random() < .06)
+                S.sfx('splash', .28);
+        }
+        else if (Math.random() < .08)
             S.sfx('step', .35, 'stone');
     }
     S.player.vel[axis] = 0;
@@ -421,7 +425,28 @@ S.rayAABB = function rayAABB(origin, dir, min, max, maxDist) {
     return tmin;
 };
 
+S.findNearbyDoorUseTarget = function findNearbyDoorUseTarget(maxDist = 6) {
+    const origin = S.eyePos(), dir = S.lookDir();
+    const minX = Math.floor(origin[0] - maxDist - 1), maxX = Math.floor(origin[0] + maxDist + 1);
+    const minY = Math.max(0, Math.floor(origin[1] - 3)), maxY = Math.min(S.WORLD_H - 1, Math.floor(origin[1] + 3));
+    const minZ = Math.floor(origin[2] - maxDist - 1), maxZ = Math.floor(origin[2] + maxDist + 1);
+    let best = null;
+    for (let y = minY; y <= maxY; y++)
+        for (let z = minZ; z <= maxZ; z++)
+            for (let x = minX; x <= maxX; x++) {
+                if (S.getBlock(x, y, z) !== S.B.WOOD_DOOR)
+                    continue;
+                const t = S.rayAABB(origin, dir, [x - .16, y, z - .16], [x + 1.16, y + 2.05, z + 1.16], maxDist);
+                if (t == null)
+                    continue;
+                if (!best || t < best.t)
+                    best = { x, y, z, id: S.B.WOOD_DOOR, t };
+            }
+    return best;
+};
+
 S.useSelected = function useSelected() {
+    if(S.selectedItem?.()?.startsWith('village_')){S.placeVillageKit?.();return;}
     const hit = S.voxelRaycast(S.eyePos(), S.lookDir(), 6);
     if (hit?.id === S.B.CHEST) {
         S.openWorldChest(hit);
@@ -435,8 +460,9 @@ S.useSelected = function useSelected() {
         S.openFurnace(hit);
         return;
     }
-    if (hit?.id === S.B.WOOD_DOOR) {
-        const f = S.ensureFortification(hit.x, hit.y, hit.z, hit.id, true);
+    const doorTarget = (hit?.id === S.B.WOOD_DOOR ? hit : S.findNearbyDoorUseTarget(6));
+    if (doorTarget?.id === S.B.WOOD_DOOR) {
+        const f = S.ensureFortification(doorTarget.x, doorTarget.y, doorTarget.z, doorTarget.id, true);
         f.open = !f.open;
         S.sfx('creak', .65);
         S.showMessage(f.open ? 'Drzwi otwarte.' : 'Drzwi zamknięte.', .8);
@@ -492,8 +518,13 @@ S.useSelected = function useSelected() {
                 S.emitPlayerNoise('fire_light',18,.85,[x+.5,y+.25,z+.5],1.5,'wood');
             }
             if (def.place === S.B.BEDROLL) {
-                S.bedrolls.set(key, { orientation: Math.round(S.player.yaw / (Math.PI / 2)) * (Math.PI / 2) });
-                S.showMessage('Śpiwór rozłożony. PPM: zapisz odrodzenie i prześpij noc.', 2.4);
+                const orientation = Math.round(S.player.yaw / (Math.PI / 2)) * (Math.PI / 2);
+                const dx = Math.abs(Math.sin(orientation)) > .5 ? Math.sign(Math.sin(orientation)) : 0;
+                const dz = Math.abs(Math.cos(orientation)) > .5 ? -Math.sign(Math.cos(orientation)) : 0;
+                const tail = [x + dx, y, z + dz];
+                const clearTail = !S.blockDefs[S.getBlock(tail[0], tail[1], tail[2])]?.solid || S.getBlock(tail[0], tail[1], tail[2]) === S.B.AIR;
+                S.bedrolls.set(key, { orientation, tail: clearTail ? tail : null });
+                S.showMessage(clearTail ? 'Śpiwór rozłożony (2 kratki). PPM: zapisz odrodzenie i prześpij noc.' : 'Śpiwór rozłożony. Brak miejsca na pełne 2 kratki.', 2.4);
             }
             if (S.isUpgradeableBlockId(def.place)) {
                 // Use the single source of fortification metadata. Reinforced

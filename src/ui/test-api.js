@@ -20,6 +20,8 @@ window.__NIGHTCRAFT_TEST__ = {
     equippedPowerFor: S.equippedPowerFor,
     miningSecondsFor: S.miningSecondsFor,
     getBlock: S.getBlock,
+    getVillagePlanForTest:()=>S.villagePlan,
+    getVillageNavigationForTest:()=>S.villageNavigation,
     setBlock: S.setBlock,
     spawnPointIsSafe: S.spawnPointIsSafe,
     findSafeSpawn: S.findSafeSpawn,
@@ -40,7 +42,7 @@ window.__NIGHTCRAFT_TEST__ = {
 };
 
 // Pre-fill a memorable default seed and expose a tiny health marker for tests.
-S.UI.seedInput.value = 'black-forest-666';
+S.UI.seedInput.value = 'hollow-pines-317';
 
 document.body.dataset.gameBooted = 'true';
 }

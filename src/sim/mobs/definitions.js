@@ -192,7 +192,16 @@ S.attackEnemy = function attackEnemy() {
     return true;
 };
 
-S.entityCollides = function entityCollides(x, y, z, r = .34, h = .9) { return S.aabbHitsWorld([x - r, y, z - r, x + r, y + h * 2, z + r]); };
+S.entityCollides = function entityCollides(x, y, z, r = .34, h = .9) {
+    // Closed doors seal the whole entrance for hostile creatures, even when
+    // the decorative door plane is thin or an AABB grazes the hinge.
+    const x0=Math.floor(x-r),x1=Math.floor(x+r),z0=Math.floor(z-r),z1=Math.floor(z+r);
+    const y0=Math.floor(y+0.05),y1=Math.floor(y+h*2-0.05);
+    for(let ix=x0;ix<=x1;ix++)for(let iz=z0;iz<=z1;iz++)for(let iy=y0;iy<=y1;iy++){
+        if(S.getBlock(ix,iy,iz)===S.B.WOOD_DOOR && !S.fortifications.get(S.fortKey(ix,iy,iz))?.open)return true;
+    }
+    return S.aabbHitsWorld([x-r,y,z-r,x+r,y+h*2,z+r]);
+};
 
 S.fortificationInPath = function fortificationInPath(e, mx, mz) { const sx = e.pos[0] + mx * 1.3, sz = e.pos[2] + mz * 1.3; for (const yy of [e.pos[1] + .15, e.pos[1] + .8]) {
     const x = Math.floor(sx), y = Math.floor(yy), z = Math.floor(sz), id = S.getBlock(x, y, z);

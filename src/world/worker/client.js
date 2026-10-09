@@ -29,7 +29,7 @@ export function createChunkWorker(S,gameData){
   }
   function reset(seed){
     token++;queue=[];inflight.clear();requested.clear();initialized=false;
-    if(worker)worker.postMessage({type:'init',token,seed:seed>>>0,worldgenVersion:S.worldgenVersion||16,gameData});
+    if(worker)worker.postMessage({type:'init',token,seed:seed>>>0,worldgenVersion:S.worldgenVersion||16,villagePlan:S.villagePlan,gameData});
   }
   function stop(){token++;initialized=false;queue=[];requested.clear();inflight.clear();worker?.terminate();worker=null;}
   function request(cx,cz){

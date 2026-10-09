@@ -10,7 +10,7 @@ S.$ = (id) => document.getElementById(id);
 
 S.canvas = S.$('game');
 
-S.gl = S.canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'high-performance' });
+S.gl = S.canvas.getContext('webgl', { antialias: true, alpha: false, powerPreference: 'high-performance' });
 
 if (!S.gl) {
     document.body.innerHTML = '<div style="padding:40px;color:white;background:#111;font-family:monospace">Ta przeglądarka nie udostępnia WebGL. Włącz akcelerację sprzętową albo użyj aktualnego Chrome/Edge/Firefox.</div>';

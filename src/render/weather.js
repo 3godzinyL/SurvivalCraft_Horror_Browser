@@ -1,3 +1,4 @@
+import {skyAt} from "./lighting.js";
 // NightCraft V15 · native ES module (render/weather.js); installs into the explicit shared state.
 export function install(S) {
 S.updateRain = function updateRain(dt) {
@@ -49,37 +50,45 @@ S.updateGlassRain = function updateGlassRain(dt, raining) {
     }
     const g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
-    if (raining) {
-        S.glassBudget += dt * (.85 + S.weatherIntensity * 2.5);
+    const exposed=skyAt(S,S.cameraEyePos?.()||S.player.pos)>.25;
+    if (raining && exposed) {
+        S.glassBudget += dt * (1.8 + S.weatherIntensity * 4.5);
         while (S.glassBudget > 1) {
             S.glassBudget--;
-            if (S.glassDroplets.length < 24)
-                S.glassDroplets.push({ x: Math.random() * w, y: -15, vel: 25 + Math.random() * 42, len: 16 + Math.random() * 40, life: 4 + Math.random() * 8, width: 1 + Math.random() * 1.4 });
+            if (S.glassDroplets.length < 42)
+                S.glassDroplets.push({ x: Math.random() * w, y: Math.random()*h*.65, vel: 12 + Math.random() * 38, len: 30 + Math.random() * 120, life: 4.6 + Math.random() * 9, width: .7 + Math.random() * 1.1, phase:Math.random()*6.283, trail:[] });
         }
     }
     else
         S.glassBudget = 0;
     for (let i = S.glassDroplets.length - 1; i >= 0; i--) {
         const d = S.glassDroplets[i];
-        d.vel = Math.min(160, d.vel + dt * 14);
+        d.vel = Math.min(115, d.vel + dt * 9);
         d.y += d.vel * dt;
-        d.x += Math.sin(d.y * .026 + i) * dt * 6;
+        d.x += Math.sin(d.y * .012 + d.phase) * dt * 2;
+        d.trail.push([d.x,d.y]);if(d.trail.length>26)d.trail.shift();
         d.life -= dt;
         if (d.y > h + 40 || d.life <= 0) {
             S.glassDroplets.splice(i, 1);
             continue;
         }
-        const a = S.clamp(d.life / 5, 0, 1) * (raining ? .41 : .12);
-        g.strokeStyle = `rgba(169,209,222,${a})`;
+        const a = S.clamp(d.life / 5, 0, 1) * (raining && exposed ? .20 : .08);
+        g.strokeStyle = `rgba(176,218,232,${a})`;
         g.lineWidth = d.width * ratio;
+        g.shadowBlur=0;
         g.beginPath();
-        g.moveTo(d.x, d.y);
-        g.bezierCurveTo(d.x + 3, d.y - d.len * .36, d.x - 2, d.y - d.len * .76, d.x + 1, d.y - d.len);
+        const tail=d.trail[0]||[d.x,d.y-d.len];
+        const gradient=g.createLinearGradient(d.x,Math.max(tail[1],d.y-d.len),d.x,d.y);
+        gradient.addColorStop(0,'rgba(200,220,224,0)');
+        gradient.addColorStop(.7,`rgba(179,208,214,${a*.4})`);
+        gradient.addColorStop(1,`rgba(224,236,237,${a})`);
+        g.strokeStyle=gradient;g.lineCap='round';
+        g.moveTo(...tail);for(const point of d.trail)g.lineTo(...point);
         g.stroke();
-        g.fillStyle = `rgba(210,230,239,${a * .8})`;
+        g.fillStyle = `rgba(222,238,246,${a * .92})`;
         g.beginPath();
-        g.ellipse(d.x, d.y, d.width * 1.5, d.width * 2.8, 0, 0, Math.PI * 2);
-        g.fill();
+        g.ellipse(d.x, d.y, d.width * 1.1, d.width * 2.1, 0, 0, Math.PI * 2);
+        g.fill();g.shadowBlur=0;
     }
 };
 
@@ -134,8 +143,11 @@ S.updatePlayer = function updatePlayer(dt, night) {
     const il = Math.hypot(ix, iz) || 1;
     ix /= il;
     iz /= il;
+    const waterBoost = S.player.inWater && (S.input.keys.has('ShiftLeft') || S.input.keys.has('ShiftRight'));
     const crouch = S.input.keys.has('ControlLeft') && !S.player.inWater, sprint = !crouch && (S.input.keys.has('ShiftLeft') || S.input.keys.has('ShiftRight')) && iz > 0 && S.player.stamina > 2 && !S.player.inWater;
-    let speed = S.player.inWater ? 2.95 : crouch ? 2.15 : sprint ? 7.0 : 4.55;
+    const staminaRatio = S.clamp((S.player.stamina || 0) / 100, 0, 1);
+    const sprintFactor = .42 + Math.pow(staminaRatio, .72) * .58;
+    let speed = S.player.inWater ? (waterBoost ? 5.6 : 3.15) : crouch ? 2.15 : sprint ? (4.65 + 2.35 * sprintFactor) : 4.55;
     if (S.player.hunger < 15)
         speed *= .8;
     if (feet === S.B.MUD)
@@ -152,18 +164,14 @@ S.updatePlayer = function updatePlayer(dt, night) {
         // Never inject a permanent upward acceleration (old surface pogo bug).
         const submerged = head === S.B.WATER;
         const up = S.input.keys.has('Space');
-        const down = S.input.keys.has('ShiftLeft') || S.input.keys.has('ShiftRight');
-        const desiredVy = up ? (submerged ? 2.3 : .95) : down ? -2.5 : (submerged ? -.48 : -.22);
+        const down = S.input.keys.has('ControlLeft') || S.input.keys.has('ControlRight');
+        const desiredVy = up ? (submerged ? 2.4 : 1.0) : down ? -2.2 : (submerged ? -.32 : -.16);
         S.player.vel[1] = S.lerp(S.player.vel[1], desiredVy, S.clamp(dt * 6, 0, 1));
         if (submerged && iz > 0 && S.player.pitch < -.30)
             S.player.vel[1] += Math.min(.8, -S.player.pitch * .55) * dt;
         S.player.vel[1] = S.clamp(S.player.vel[1], -2.8, 2.7);
         S.player.swimSound -= dt;
-        if ((Math.hypot(S.player.vel[0], S.player.vel[2]) > 1 || S.input.keys.has('Space')) && S.player.swimSound <= 0) {
-            S.sfx('swim', .7);
-            S.emitPlayerNoise('swim', 15, .85, null, 1.1, 'water');
-            S.player.swimSound = .45;
-        }
+
     }
     else {
         S.player.vel[1] -= 19.2 * dt;
@@ -187,7 +195,7 @@ S.updatePlayer = function updatePlayer(dt, night) {
         S.sfx('step', .65, mat);
         S.emitPlayerNoise('jump', crouch ? 7 : 13, crouch ? .30 : .72, null, 1.2, mat);
     }
-    const preVy = S.player.vel[1], preMoveX = S.player.pos[0], preMoveZ = S.player.pos[2];
+    const preVy = S.player.vel[1], preMoveX = S.player.pos[0], preMoveZ = S.player.pos[2], preMoveY = S.player.pos[1];
     S.movePlayerAxis(0, S.player.vel[0] * dt);
     S.movePlayerAxis(2, S.player.vel[2] * dt);
     S.movePlayerAxis(1, S.player.vel[1] * dt);
@@ -200,6 +208,7 @@ S.updatePlayer = function updatePlayer(dt, night) {
             S.hurtPlayer(Math.min(55, (Math.abs(preVy) - 10.5) * 5), 'upadek');
         if (preVy < -4.8) {
             const mat = S.footstepMaterial(), hard = S.clamp((Math.abs(preVy) - 4.8) / 8, 0, 1);
+            S.sfx('step',.7+hard*.45,mat);
             S.emitPlayerNoise('landing', 10 + hard * 17, .55 + hard * .65, null, 1.45, mat);
         }
         S.player.grounded = true;
@@ -209,9 +218,9 @@ S.updatePlayer = function updatePlayer(dt, night) {
     if (S.player.pos[1] < -8)
         S.hurtPlayer(999, 'otchłań');
     const planar = Math.hypot(S.player.vel[0], S.player.vel[2]), moving = planar > .65;
-    if (S.player.grounded && moving) {
+    if (S.player.grounded && moving && travelled>.002 && !S.player.inWater) {
         S.player.movePhase += dt * (sprint ? 12 : crouch ? 5.6 : 8.3) * (planar / Math.max(speed, .01));
-        S.player.stepDistance += planar * dt;
+        S.player.stepDistance += travelled;
         const stride = sprint ? .92 : crouch ? 1.34 : 1.12;
         if (S.player.stepDistance >= stride) {
             S.player.stepDistance %= stride;
@@ -222,13 +231,18 @@ S.updatePlayer = function updatePlayer(dt, night) {
     }
     else if (!S.player.inWater)
         S.player.stepDistance = 0;
+    if(S.player.inWater){
+        S.player.swimDistance=(S.player.swimDistance||0)+travelled+Math.abs(S.player.pos[1]-preMoveY)*.35;
+        if(S.player.swimDistance>1.65&&S.player.swimSound<=0){S.player.swimDistance%=1.65;S.player.swimSound=.48;S.sfx('swim',waterBoost?.68:.52);S.emitPlayerNoise('swim',waterBoost?18:15,waterBoost?1:.85,null,1.1,'water');}
+    }else S.player.swimDistance=0;
     const targetBob = S.player.grounded && moving ? Math.sin(S.player.movePhase * 2) * (.035 + (sprint ? .018 : 0)) : S.player.inWater ? Math.sin(performance.now() * .003) * .025 : 0;
     S.player.bob = S.lerp(S.player.bob, targetBob, S.clamp(dt * 14, 0, 1));
     if (moving)
         S.player.sway += Math.sin(S.player.movePhase) * .0025;
-    if (sprint && moving) {
-        S.player.stamina = S.clamp(S.player.stamina - 13.5 * dt, 0, 100);
-        S.player.hunger = S.clamp(S.player.hunger - .05 * dt, 0, 100);
+    if ((sprint && moving) || (S.player.inWater && waterBoost && moving)) {
+        const drain = (sprint ? 11.8 : 8.2) * (.34 + staminaRatio * .66);
+        S.player.stamina = S.clamp(S.player.stamina - drain * dt, 0, 100);
+        S.player.hunger = S.clamp(S.player.hunger - (sprint ? .05 : .032) * dt, 0, 100);
     }
     else
         S.player.stamina = S.clamp(S.player.stamina + (S.player.hunger > 10 ? 17 : 8) * dt, 0, 100);
@@ -377,6 +391,5 @@ S.updateWorld = function updateWorld(dt) {
             S.UI.message.style.opacity = '0';
     }
     S.updateStreaming(S.player.pos[0], S.player.pos[2]);
-    S.processDirty(2);
 };
 }

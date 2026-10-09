@@ -32,6 +32,8 @@ S.setBlock = function setBlock(x, y, z, id, record = true) {
     c.data[S.idx3(S.mod(x, S.CHUNK), y, S.mod(z, S.CHUNK))] = id;
     if (record)
         S.edits.set(S.editKey(x, y, z), id);
+    S.worldLampTimer=0;
+    if(S.sunShadow)S.sunShadow.dirty=true;
     S.markDirty(cx, cz);
     if (S.mod(x, S.CHUNK) === 0)
         S.markDirty(cx - 1, cz);
@@ -68,7 +70,7 @@ S.faces = [
 
 S.faceUV = [[0, 1], [1, 1], [1, 0], [0, 1], [1, 0], [0, 0]];
 
-S.tileUV = function tileUV(tileIndex, u, v) { const col = tileIndex % S.atlas.cols, row = Math.floor(tileIndex / S.atlas.cols), pad = .03 / S.atlas.tile; return [(col + pad + u * (1 - 2 * pad)) / S.atlas.cols, (row + pad + v * (1 - 2 * pad)) / S.atlas.rows]; };
+S.tileUV = function tileUV(tileIndex, u, v) { const col = tileIndex % S.atlas.cols, row = Math.floor(tileIndex / S.atlas.cols);if(S.atlas.gutter){const a=S.atlas;return [(col*a.stride+a.gutter+.5+u*(a.tile-1))/(a.cols*a.stride),(row*a.stride+a.gutter+.5+v*(a.tile-1))/(a.uvRows*a.stride)];}const pad = .03 / S.atlas.tile; return [(col + pad + u * (1 - 2 * pad)) / S.atlas.cols, (row + pad + v * (1 - 2 * pad)) / S.atlas.rows]; };
 
 S.tileFor = function tileFor(id, side) { const t = S.blockTile[id]; if (typeof t === 'number')
     return t; if (t)

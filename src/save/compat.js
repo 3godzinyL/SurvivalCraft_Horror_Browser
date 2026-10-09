@@ -45,6 +45,7 @@ S.saveGame = function saveGame() {
             worldSeconds: S.worldSeconds,
             playSeconds: S.playSeconds,
             worldSpawn: S.worldSpawn,
+            villagePlan: S.villagePlan ? JSON.parse(JSON.stringify(S.villagePlan)) : null,
             distanceWalked: S.player.distanceWalked || 0,
             pos: S.player.pos, yaw: S.player.yaw, pitch: S.player.pitch, health: S.player.health, hunger: S.player.hunger, stamina: S.player.stamina, sanity: S.player.sanity,
             slots: S.player.slots, craftSlots: S.player.craftSlots, offhand: S.player.offhand, kills: S.player.kills, blocksMined: S.player.blocksMined,
@@ -59,7 +60,7 @@ S.saveGame = function saveGame() {
             adminMode: S.adminMode,
             fallingTrees: (S.fallingTrees||[]).map(({root,id,logs,leaves,height,dx,dz,age,angle})=>({root,id,logs,leaves,height,dx,dz,age,angle})),
             edits: [...S.edits.entries()], enemyBlockDamage: [...S.enemyBlockDamage.entries()], fortifications: [...S.fortifications.entries()], torchMounts: [...S.torchMounts.entries()], furnaces: [...S.furnaces.entries()], droppedItems: S.droppedItems.slice(-120).map(d => ({ id: d.id, count: d.count, pos: d.pos, vel: d.vel, age: d.age, pickupDelay: d.pickupDelay, spin: d.spin, bob: d.bob })),
-            settings: { sensitivity: S.input.sensitivity, volume: S.audio.volume, renderDistance: S.renderDistance }
+            settings: { sensitivity: S.input.sensitivity, volume: S.audio.volume, renderDistance: S.renderDistance, graphics: S.graphics ? {...S.graphics} : undefined }
         };
         S.cachedSave = JSON.stringify(data);
         const pending=S.persistWorldSave(S.cachedSave);
@@ -80,7 +81,7 @@ S.saveGame = function saveGame() {
 S.clearWorldRuntime = function clearWorldRuntime() {
     if(S.fallingTrees) S.fallingTrees.length=0;
     S.fallenLogDamage?.clear();
-    S.lastDeathPosition = null; S.waypoint=null;
+    S.lastDeathPosition = null; S.waypoint=null; S.villagePlan=null;
     S.treeChopAim=null;
     S.rainDrops.length = 0;
     S.glassDroplets.length = 0;
@@ -262,8 +263,9 @@ S.startNewGame = function startNewGame() {
     const seedText = (S.UI.seedInput.value.trim() || `${Date.now()}-${Math.floor(Math.random() * 9999)}`);
     S.UI.seedInput.value = seedText;
     S.worldSeed = S.hashString(seedText);
-    S.worldgenVersion = 22;
-    S.chunkWorker?.reset(S.worldSeed);
+    S.worldgenVersion = S.worldgenOverride || 26;
+    // Village descriptor must exist before worker init, so all chunks agree.
+
     S.difficulty = S.UI.difficultySelect.value;
     S.resetPlayer();
     S.worldSeconds = (S.WORLD_START_HOUR / 24) * S.DAY_SECONDS;
@@ -281,6 +283,8 @@ S.startNewGame = function startNewGame() {
     S.updateAdminButton();
     S.player.pos = S.findScenicSpawn();
     S.worldSpawn = [...S.player.pos];
+    if(S.worldgenVersion>=26)S.createVillageQuest?.();
+    S.chunkWorker?.reset(S.worldSeed);
     S.updateStreaming(S.player.pos[0], S.player.pos[2], true);
     S.createStarterChestNear(S.player.pos);
     S.running = true;
@@ -291,7 +295,8 @@ S.startNewGame = function startNewGame() {
     S.refreshHotbar();
     S.refreshInventoryUI();
     S.saveGame();
-    S.resumeGame();
+    if(!S.multiplayer?.active && S.openVillageGuide)S.openVillageGuide();
+    else S.resumeGame();
 };
 
 S.loadGame = function loadGame() {
@@ -309,6 +314,7 @@ S.loadGame = function loadGame() {
     S.resetPlayer();
     S.worldSeed = d.seed >>> 0;
     S.worldgenVersion = d.worldgenVersion || 16;
+    S.restoreVillageQuest?.(d.villagePlan);
     S.chunkWorker?.reset(S.worldSeed);
     S.UI.seedInput.value = d.seedText || String(S.worldSeed);
     S.difficulty = d.difficulty || 'nightmare';
@@ -401,7 +407,8 @@ S.loadGame = function loadGame() {
         const oldSens = Number(d.settings.sensitivity) || .0095;
         S.input.sensitivity = S.clamp(d.version >= 5 ? oldSens : Math.max(.0105, oldSens * 1.18), .002, .022);
         S.audio.volume = S.clamp(d.settings.volume ?? .7, 0, 1);
-        S.renderDistance = S.clamp(Number(d.settings.renderDistance) || 12, 2, 12);
+        const oldRange=d.settings.graphics?.version>=35?Number(d.settings.renderDistance)||12:12;
+        if(!S.graphicsFromStorage){S.renderDistance=S.clamp(oldRange,2,24);S.setGraphicsSettings?.({...d.settings.graphics,renderDistance:S.renderDistance},false);}
         S.UI.sensInput.value = String(S.input.sensitivity);
         S.UI.volumeInput.value = String(S.audio.volume);
         S.UI.renderDistanceSelect.value = String(S.renderDistance);

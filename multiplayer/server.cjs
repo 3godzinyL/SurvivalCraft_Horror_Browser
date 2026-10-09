@@ -39,7 +39,7 @@ function loadRoom(code){if(rooms.has(code))return rooms.get(code);let raw;
 function publicRoom(){
   let room=loadRoom(PUBLIC_CODE);
   if(room)return room;
-  room={code:PUBLIC_CODE,seed:seedHash(PUBLIC_SEED),seedText:PUBLIC_SEED,difficulty:'nightmare',worldgenVersion:22,edits:new Map(),clock:800,peers:new Set(),dirty:true};
+  room={code:PUBLIC_CODE,seed:seedHash(PUBLIC_SEED),seedText:PUBLIC_SEED,difficulty:'nightmare',worldgenVersion:26,edits:new Map(),clock:800,peers:new Set(),dirty:true};
   rooms.set(PUBLIC_CODE,room);store(room);return room;
 }
 function cleanName(v){return String(v||'Gracz').replace(/[<>\x00-\x1f]/g,'').trim().slice(0,22)||'Gracz';}
@@ -58,13 +58,13 @@ function receive(peer,m){if(!m||typeof m!=='object'||typeof m.t!=='string')retur
   if(m.t==='join_public'){join(peer,publicRoom(),m.name);return;}
   if(m.t==='create'){
     if(peer.room)return err(peer,'Najpierw opuść obecny pokój.');
-    if(typeof m.seedText!=='string'||m.seedText.length>32||!Number.isInteger(m.seed)||!Number.isInteger(m.worldgenVersion)||m.worldgenVersion!==22)return err(peer,'Nieprawidłowe dane świata (wymagana generacja V22).');
+    if(typeof m.seedText!=='string'||m.seedText.length>32||!Number.isInteger(m.seed)||!Number.isInteger(m.worldgenVersion)||![22,26].includes(m.worldgenVersion))return err(peer,'Nieprawidłowe dane świata (wersja V22 lub V26).');
     let code;do{code=roomCode();}while(rooms.has(code)||fs.existsSync(roomFile(code)));
-    const room={code,seed:m.seed>>>0,seedText:m.seedText,difficulty:['normal','nightmare','insane'].includes(m.difficulty)?m.difficulty:'nightmare',worldgenVersion:22,clock:800,edits:new Map(),peers:new Set(),dirty:true};rooms.set(code,room);store(room);join(peer,room,m.name);return;
+    const room={code,seed:m.seed>>>0,seedText:m.seedText,difficulty:['normal','nightmare','insane'].includes(m.difficulty)?m.difficulty:'nightmare',worldgenVersion:m.worldgenVersion,clock:800,edits:new Map(),peers:new Set(),dirty:true};rooms.set(code,room);store(room);join(peer,room,m.name);return;
   }
   if(m.t==='join'){
     const code=String(m.code||'').trim().toUpperCase();if(!/^[A-HJ-NP-Z2-9]{8}$/.test(code))return err(peer,'Kod pokoju ma 8 znaków.');
-    const room=loadRoom(code);if(!room)return err(peer,'Pokój nie istnieje.');if(room.worldgenVersion!==22)return err(peer,'Niekompatybilna wersja świata.');join(peer,room,m.name);return;
+    const room=loadRoom(code);if(!room)return err(peer,'Pokój nie istnieje.');if(![22,26].includes(room.worldgenVersion))return err(peer,'Niekompatybilna wersja świata.');join(peer,room,m.name);return;
   }
   if(m.t==='leave'){drop(peer);return;}
   if(!peer.room)return;
@@ -74,6 +74,19 @@ function receive(peer,m){if(!m||typeof m!=='object'||typeof m.t!=='string')retur
     const maxSpeed=45,maxDist=Math.max(16,(now-peer.lastPosTime)/1000*maxSpeed);if(peer.lastPosTime && Math.hypot(m.pos[0]-peer.pos[0],m.pos[2]-peer.pos[2])>maxDist)return;
     peer.pos=m.pos.map(n=>Math.round(n*100)/100);peer.lastPosTime=now;peer.yaw=Number.isFinite(m.yaw)?m.yaw:0;peer.pitch=Number.isFinite(m.pitch)?m.pitch:0;peer.health=Number.isFinite(m.health)?Math.max(0,Math.min(100,m.health)):100;
     broadcast(room,{t:'state',id:peer.id,pos:peer.pos,yaw:peer.yaw,pitch:peer.pitch,health:peer.health},peer);return;
+  }
+  if(m.t==='edit_batch'){
+    if(!Array.isArray(m.edits)||m.edits.length<1||m.edits.length>450)return;
+    const clean=[];
+    for(const row of m.edits){
+      if(!Array.isArray(row)||row.length!==4||!row.every(Number.isInteger))return;
+      const [x,y,z,id]=row,edit={x,y,z,id};
+      if(!validEdit(edit)||Math.hypot(x-peer.pos[0],z-peer.pos[2])>120||Math.abs(y-peer.pos[1])>80)return;
+      clean.push(row);
+    }
+    if(room.edits.size+clean.length>MAX_EDITS)return err(peer,'Limit edycji świata osiągnięty.');
+    for(const [x,y,z,id] of clean)room.edits.set(`${x},${y},${z}`,id);
+    room.dirty=true;broadcast(room,{t:'edit_batch',edits:clean},peer);return;
   }
   if(m.t==='edit'){
     if(!validEdit(m))return;const key=`${m.x},${m.y},${m.z}`;

@@ -47,13 +47,37 @@ S.updateMinimap = function updateMinimap(dt) {
     // Waypoint is world-anchored. Edge arrow stays visible even when marker
     // is beyond mini-map range (it never teleports to the player).
     if(S.waypoint){
-        const dx=(S.waypoint.x-S.player.pos[0])/radius*(W/2);
-        const dz=(S.waypoint.z-S.player.pos[2])/radius*(H/2);
+        // When the goal is the mill, follow the CURRENT route leg, not the island
+        // centre behind the water. Custom player waypoints stay untouched.
+        const millGoal=S.villagePlan&&Math.hypot(S.waypoint.x-S.villagePlan.x,S.waypoint.z-S.villagePlan.z)<5;
+        const waypoint=millGoal&&S.villageNavigation?.target?S.villageNavigation.target:S.waypoint;
+        const dx=(waypoint.x-S.player.pos[0])/radius*(W/2);
+        const dz=(waypoint.z-S.player.pos[2])/radius*(H/2);
         const len=Math.hypot(dx,dz),scale=len>W*.43?(W*.43/len):1;
         const mx=W/2+dx*scale,mz=H/2+dz*scale;
         ctx.save();ctx.translate(mx,mz);ctx.rotate(Math.atan2(dx,-dz));
         ctx.strokeStyle='#261f10';ctx.lineWidth=2.5;ctx.fillStyle='#ffe3a1';
         ctx.beginPath();ctx.moveTo(0,-8);ctx.lineTo(5,4);ctx.lineTo(0,1);ctx.lineTo(-5,4);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+    }
+    // Route is drawn in WORLD coordinates, and the edge-of-map pointer
+    // leads to the immediate stage (not blindly across the lagoon).
+    if(S.villageNavigation){
+        const t=S.villageNavigation.target,dx=t.x-S.player.pos[0],dz=t.z-S.player.pos[2];
+        const len=Math.hypot(dx,dz)||1,frac=Math.min(1,radius*.43/len);
+        const ex=W/2+dx/radius*(W/2)*frac,ez=H/2+dz/radius*(H/2)*frac;
+        ctx.save();ctx.strokeStyle='#eed18c';ctx.lineWidth=2.4;ctx.setLineDash([6,4]);
+        ctx.beginPath();ctx.moveTo(W/2,H/2);ctx.lineTo(ex,ez);ctx.stroke();ctx.setLineDash([]);
+        ctx.fillStyle='#f3dda1';ctx.strokeStyle='#3c2f1c';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(ex,ez,5,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();
+    }
+    // Village mine entrance is visible on the minimap when inside map radius.
+    if(S.villagePlan){
+        const dx=(S.villagePlan.x-12-S.player.pos[0])/radius*(W/2),dz=(S.villagePlan.z-35-S.player.pos[2])/radius*(H/2);
+        if(Math.hypot(dx,dz)<W*.45){
+            ctx.save();ctx.fillStyle='#c6e3e4';ctx.strokeStyle='#243c3d';ctx.lineWidth=2;
+            ctx.fillRect(W/2+dx-4,H/2+dz-4,8,8);ctx.strokeRect(W/2+dx-4,H/2+dz-4,8,8);
+            ctx.restore();
+        }
     }
     // chest + nearby hostile markers
     if (S.starterChestPos) {
