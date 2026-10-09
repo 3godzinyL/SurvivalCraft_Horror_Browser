@@ -167,7 +167,7 @@ S.loadAudioSamples = async function loadAudioSamples() {
     // Decode a small high-priority set first, then the large material library in
     // batches. This avoids a one-frame storm of ~160 simultaneous decodes while
     // HTMLAudio remains a fallback for a sample requested before its buffer exists.
-    const priorityKeys = new Set(['evening', 'music', 'hurt', 'heartbeat', 'thunder', 'rain_loop', 'wind_loop', 'thunder2', 'thunder3', 'splash', 'swim', 'pickup1', 'pickup2', 'chest_open', 'chest_close', 'jumpscare', 'wolf_bark_1', 'wolf_growl_2', 'bat_shriek_1', 'bat_wings', 'step_grass_1', 'step_grass_2', 'step_stone_1', 'step_stone_2', 'block_hit_dirt_1', 'block_break_dirt_1', 'block_place_dirt_1']);
+    const priorityKeys = new Set(['evening', 'music', 'hurt', 'heartbeat', 'thunder', 'rain_loop', 'wind_loop', 'thunder2', 'thunder3', 'splash', 'swim', 'swim_stroke_2', 'swim_stroke_3', 'pickup1', 'pickup2', 'chest_open', 'chest_close', 'jumpscare', 'wolf_bark_1', 'wolf_growl_2', 'bat_shriek_1', 'bat_wings', 'step_grass_1', 'step_grass_2', 'step_stone_1', 'step_stone_2', 'block_hit_dirt_1', 'block_break_dirt_1', 'block_place_dirt_1']);
     const entries = Object.entries(S.audioFiles), priority = entries.filter(([k]) => priorityKeys.has(k)), rest = entries.filter(([k]) => !priorityKeys.has(k));
     await Promise.all(priority.map(loadOne));
     S.startAmbientLoops();
@@ -247,7 +247,7 @@ S.sfx = function sfx(type, amount = 1, material = 'generic') {
         return;
     }
     if (type === 'swim') {
-        if (S.playSample('swim', .78 * a, .88 + Math.random() * .18))
+        if (S.playSample(['swim','swim_stroke_2','swim_stroke_3'][(S.swimVoice=(S.swimVoice||0)+1)%3], .66 * a, .96 + Math.random() * .08))
             return;
         S.noiseBurst(.15, .08 * a, 760);
         return;

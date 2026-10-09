@@ -174,5 +174,7 @@
   "boar_grunt_1": "assets/audio/boar_grunt_1.wav",
   "boar_grunt_2": "assets/audio/boar_grunt_2.wav",
   "hollowed_breath": "assets/audio/hollowed_breath.wav",
-  "hollowed_attack": "assets/audio/hollowed_attack.wav"
+  "hollowed_attack": "assets/audio/hollowed_attack.wav",
+  "swim_stroke_2": "assets/audio/swim_stroke_2.wav",
+  "swim_stroke_3": "assets/audio/swim_stroke_3.wav"
 }

@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>NightCraft: Cold Forest — V25 DESKTOP + CO-OP</title>
+  <title>NightCraft: Cold Forest — V35.1 NATURA + ŚWIATŁO + CO-OP</title>
   <meta name="description" content="Rozbudowany przeglądarkowy voxel survival-horror." />
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
 <link rel="stylesheet" href="styles-waypoint.css">
   <link rel="stylesheet" href="styles-multiplayer.css">
   <link rel="stylesheet" href="styles-desktop.css">
+  <link rel="stylesheet" href="styles-village.css">
 </head>
 <body>
   <canvas id="game" aria-label="NightCraft game canvas"></canvas>
@@ -27,7 +28,7 @@
     <canvas id="menuLeafFx" aria-hidden="true"></canvas>
     <div class="menu-scene-label" aria-hidden="true"><span class="menu-scene-rule"></span><b>COLD FOREST</b><small>PANORAMA LASU · ZASIĘG 12 CHUNKÓW</small></div>
     <div class="menu-card">
-      <div class="eyebrow">VOXEL SURVIVAL HORROR · V25 DESKTOP</div>
+      <div class="eyebrow">VOXEL SURVIVAL HORROR · V35.1 OSTRY LAS I PŁYNNA WODA</div>
       <h1>NIGHTCRAFT <span>COLD FOREST</span></h1>
       <p class="lead">Chłodny, mglisty sandbox w duchu klasycznych voxel-survivalów: dzikie biomy, jaskinie i opuszczone szyby, zwierzęta, nocne drapieżniki, pełny ekwipunek i cięższy klimat po zmroku.</p>
       <label class="field">Seed świata<input id="seedInput" maxlength="32" placeholder="np. foggy-pines-199" /></label>
@@ -43,8 +44,8 @@
         <button id="continueBtn">KONTYNUUJ OFFLINE</button>
       </div>
       <div class="desktop-start-actions"><button id="desktopHostToggle" class="desktop-host-toggle hidden" type="button">HOSTUJ GRĘ · WŁASNY SERWER</button><button id="mpToggle" class="mp-launch" type="button">DOŁĄCZ DO GRY · LINK NGROK</button></div>
-      <div class="tiny">WASD ruch · Shift sprint · Ctrl cichy chód · Spacja skok/wynurzanie · Shift zanurzanie · F5 kamera · LPM kop/atak · PPM postaw/użyj · E ekwipunek/crafting · 1–9 hotbar · Esc pauza/zamknij panel · M duża mapa (PPM: waypoint, rolka: zoom minimapy) · X: X-Ray od 1 lvl (leczy + wzmacnia się z XP) · PPM na śpiworze: sen i respawn · środkowy przycisk myszy: ulepsz konstrukcję (3/6/9) · księga craftingu w E · T katalog admina · TAB gracze i XYZ (online) · Enter czat (online) · F3 debug</div>
-      <div class="legal">Autorskie tekstury i dźwięki stworzone dla tego builda. Styl wizualny jest inspirowany starymi, surowymi sandboxami voxelowymi — bez kopiowania cudzych assetów 1:1.</div>
+      <div class="tiny">WASD ruch · Shift sprint · Ctrl cichy chód · Spacja skok/wynurzanie · Ctrl zanurzanie · C zoom · F5 kamera · LPM kop/atak · PPM postaw/użyj · E ekwipunek/crafting · 1–9 hotbar · Esc pauza/zamknij panel · M duża mapa (PPM: waypoint, rolka: zoom minimapy) · X: X-Ray od 1 lvl (leczy + wzmacnia się z XP) · PPM na śpiworze: sen i respawn · środkowy przycisk myszy: ulepsz konstrukcję (3/6/9) · księga craftingu w E · T katalog admina · TAB gracze i XYZ (online) · Enter czat (online) · G dziennik osady · V rozmowa z Aldrykiem przy młynie · F3 debug</div>
+      <button id="openGraphicsMain" class="graphics-launch" type="button">USTAWIENIA · GRAFIKA</button><div class="legal">Autorskie tekstury i dźwięki stworzone dla tego builda. Styl wizualny jest inspirowany starymi, surowymi sandboxami voxelowymi — bez kopiowania cudzych assetów 1:1.</div>
     </div>
   </section>
 
@@ -99,17 +100,35 @@
         <button id="saveBtn">ZAPISZ TERAZ</button>
         <button id="adminToggleBtn" class="admin-toggle">TRYB ADMINISTRATORA: OFF</button>
       </div>
-      <div class="settings-grid">
+      <button id="openGraphicsPause" type="button">USTAWIENIA GRAFIKI</button><div class="settings-grid">
         <label>Czułość myszy<input id="sensInput" type="range" min="0.002" max="0.022" step="0.00025" value="0.0115" /></label>
         <label>Głośność<input id="volumeInput" type="range" min="0" max="1" step="0.05" value="0.82" /></label>
-        <label>Render distance<select id="renderDistanceSelect"><option value="2">2 chunki</option><option value="3">3 chunki</option><option value="4">4 chunki</option><option value="5">5 chunków</option><option value="6">6 chunków</option><option value="8">8 chunków</option><option value="10">10 chunków</option><option value="12" selected>12 chunków</option></select></label>
+        <label>Render distance<select id="renderDistanceSelect"><option value="2">2 chunków</option><option value="4">4 chunków</option><option value="6">6 chunków</option><option value="8">8 chunków</option><option value="10">10 chunków</option><option value="12" selected>12 chunków</option><option value="16">16 chunków</option><option value="20">20 chunków</option><option value="24">24 chunków</option></select></label>
       </div>
       <div class="tiny admin-help">Po włączeniu administratora: <b>T</b> otwiera katalog wszystkich bloków i mobów.</div>
       <button id="quitBtn" class="danger">ZAPISZ I WYJDŹ DO MENU</button>
     </div>
   </section>
 
-  <section id="deathMenu" class="screen">
+  
+  <section id="graphicsPanel" class="graphics-panel hidden" aria-label="Ustawienia grafiki">
+    <div class="graphics-card"><header><h2>USTAWIENIA GRAFIKI</h2><button id="graphicsClose" type="button" aria-label="Zamknij ustawienia">✕</button></header>
+      <div class="graphics-presets"><button data-preset="low">PŁYNNOŚĆ</button><button data-preset="balanced">ZRÓWNOWAŻONE</button><button data-preset="high">JAKOŚĆ</button></div>
+      <div class="settings-grid">
+        <label>Zasięg świata<select id="graphicsRange"><option value="2">2 chunków</option><option value="4">4 chunków</option><option value="6">6 chunków</option><option value="8">8 chunków</option><option value="10">10 chunków</option><option value="12">12 chunków</option><option value="16">16 chunków</option><option value="20">20 chunków</option><option value="24">24 chunków</option></select></label>
+        <label>Rozdzielczość renderowania<select id="graphicsResolution"><option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option><option value="1.25">125%</option><option value="1.5">150%</option></select></label>
+        <label>Tekstury w oddali<select id="graphicsFilter"><option value="mipmap">Stabilne · mipmapy</option><option value="pixel">Ostre piksele</option></select></label>
+        <label>Filtrowanie pod kątem<select id="graphicsAnisotropy"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option><option value="16">16×</option></select></label>
+        <label>Roślinność<select id="graphicsVegetation"><option value="48">Blisko · 48 m</option><option value="80">Normalnie · 80 m</option><option value="112">Daleko · 112 m</option></select></label>
+        <label>Woda<select id="graphicsWater"><option value="0">Prosta</option><option value="1">Fale i głębia</option><option value="2">Fale, głębia i odbicia</option></select></label>
+        <label class="graphics-check"><input id="graphicsShadows" type="checkbox"> Cienie słońca</label>
+        <label class="graphics-check"><input id="graphicsAdaptive" type="checkbox"> Automatyczna rozdzielczość</label>
+      </div>
+      <p>Przytrzymaj C, aby przybliżyć widok. Ustawienia zapisują się automatycznie. Domyślny zasięg: 12 chunków.</p>
+    </div>
+  </section>
+
+<section id="deathMenu" class="screen">
     <div class="menu-card compact death-card">
       <div class="eyebrow danger-text">KONIEC</div>
       <h2 id="deathTitle">LAS CIĘ ZNALAZŁ</h2>
@@ -158,7 +177,7 @@
     </div>
     <div id="recipeCodex" class="recipe-codex hidden" role="dialog" aria-label="Księga receptur">
       <div class="codex-head"><div><span>NOTATNIK OCALAŁEGO · I–IV</span><h3>Księga receptur</h3><small>Wszystkie craftingi świata · kliknij przepis, aby ułożyć składniki</small></div><button id="closeRecipeCodex" title="Zamknij księgę">×</button></div>
-      <div class="codex-tools"><input id="codexSearch" placeholder="Szukaj materiału lub przedmiotu..." autocomplete="off"/><button id="codexAll" class="active">WSZYSTKIE</button><button id="codexReady">DOSTĘPNE</button></div>
+      <div class="codex-tools"><input id="codexSearch" placeholder="Szukaj materiału lub przedmiotu..." autocomplete="off"/><button id="codexAll" class="active">WSZYSTKIE</button><button id="codexReady">DOSTĘPNE</button><button id="codexUpgrades">ULEPSZENIA</button><button id="codexBuildings">BUDYNKI</button></div>
       <div id="codexRecipes" class="codex-recipes"></div>
     </div>
   </section>
@@ -228,6 +247,16 @@
     <div id="nightWarning" class="hidden">NIE JESTEŚ SAM</div>
   </div>
 
+  <div id="villageQuestHud" class="village-quest-hud hidden" aria-label="Nawigacja do młyna">
+    <div class="village-quest-top"><span class="village-compass-glyph">✣</span><span id="villageQuestStage">DO OSADY</span></div>
+    <div class="village-quest-main"><span id="villageQuestArrow" class="village-arrow">▲</span><b id="villageQuestText">IDŹ PROSTO</b></div>
+    <small id="villageQuestDistance">ODLEGŁOŚĆ DO MŁYNA</small><small id="villageQuestHint">Podążaj za kompasem</small>
+  </div>
+  <section id="villageGuide" class="village-overlay hidden" aria-label="Księga przetrwania i osady">
+    <div class="guide-book"><div class="guide-leaf guide-left"><div id="guideChapter" class="folio">I · POWOŁANIE</div><h2 id="guideTitle">OCALIĆ ŚWIATŁO</h2><div class="guide-divider"></div><div id="guideDrawing" class="guide-art guide-art-forest" aria-hidden="true"></div><div class="guide-divider"></div><span class="folio">NIGHTCRAFT · ZAPISKI OCALAŁEGO</span></div>
+    <div class="guide-leaf guide-right"><div id="guideKicker" class="folio">CEL TWOJEJ WYPRAWY</div><p id="guideBody"></p><ul id="guideTasks"></ul><div class="guide-controls"><button type="button" id="guidePrev">← POPRZEDNIA</button><span id="guidePageNumber">1 / 7</span><button type="button" id="guideNext">NASTĘPNA STRONA →</button><button type="button" id="guideDismiss">ZAMKNIJ ✕</button></div></div></div>
+  </section>
+  <section id="villageBoard" class="village-overlay hidden" aria-label="Warsztat rozbudowy wioski"><div class="village-board"><div class="eyebrow">MŁYN ALDRYKA · RADA OSADY</div><h2>MISTRZ ALDRYK · ODBUDOWA WSI</h2><p>Witaj w starym młynie. Aldryk zajmuje się zamówieniami, odbudową obrony i rozwojem osady. Przynieś kłody drewna, a robotnicy przygotują gotowe elementy. Wybierz przedmiot w hotbarze: przezroczysty podgląd pokaże jego ustawienie, PPM potwierdzi.</p><p id="villageResources"></p><div id="villagePopulation"></div><div class="village-board-actions"><div><strong>⌂ DOMEK OSADNIKA</strong><small>Gotowy domek z oknami, dachem i wyposażeniem. Koszt: 90 drewna.</small><button type="button" id="villageHouseBtn">WYTWÓRZ DOMEK · 90</button></div><div><strong>▥ SEGMENT MURU</strong><small>Utwardzony mur, szerokość 3 bloki i wysokość 3 bloki. Koszt: 27 drewna.</small><button type="button" id="villageWallBtn">WYTWÓRZ MUR · 27</button></div></div><button type="button" id="villageUpgradeBtn" class="village-upgrade-button">ULEPSZ SEGMENT MURU</button><button type="button" id="villageRepairBtn">NAPRAW OBRONĘ WIOSKI · 20 DREWNA + 10 KAMIENIA (+35% OCHRONY)</button> <button type="button" id="villageBoardClose">WRÓĆ DO GRY</button></div></section>
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

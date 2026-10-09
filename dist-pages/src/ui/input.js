@@ -16,17 +16,33 @@ S.resumeGame = function resumeGame() {
     S.inventoryOpen = false; S.adminOpen = false; S.furnaceOpen = false; S.mapOpen = false; S.chestOpen = false;
     S.furnaceActiveKey = null; S.UI.inventoryPanel.classList.add('hidden'); S.closeRecipeCodex?.();
     S.UI.adminPanel.classList.add('hidden'); S.UI.furnacePanel?.classList.add('hidden'); S.UI.fullMapPanel?.classList.add('hidden');
+    if (S.canvas.tabIndex < 0) S.canvas.tabIndex = 0;
     S.canvas.focus?.(); S.initAudio(); S.audio.ctx?.resume?.();
     if (document.pointerLockElement === S.canvas) { S.paused = false; S.UI.pauseMenu.classList.remove('active'); return; }
     if (typeof S.canvas.requestPointerLock !== 'function') { S.paused = false; S.UI.pauseMenu.classList.remove('active'); return; }
     S.lockPending = true;
+    // A pointer-lock request can return before pointerlockchange is delivered,
+    // or be silently ignored by a browser. Never leave a visible world in an
+    // indefinitely paused state after the intro book is dismissed.
+    const lockDenied = () => {
+        if (!S.lockPending) return;
+        S.lockPending = false;
+        if (document.pointerLockElement === S.canvas) return;
+        S.paused = true;
+        S.UI.pauseMenu.classList.add('active');
+    };
     try {
         const pending = S.canvas.requestPointerLock();
         Promise.resolve(pending).then(() => {
-            S.lockPending = false;
-            if (document.pointerLockElement === S.canvas) { S.paused = false; S.UI.pauseMenu.classList.remove('active'); }
-        }).catch(() => { S.lockPending = false; S.paused = true; S.UI.pauseMenu.classList.add('active'); });
-    } catch (_) { S.lockPending = false; S.paused = true; S.UI.pauseMenu.classList.add('active'); }
+            if (document.pointerLockElement === S.canvas) {
+                S.lockPending = false;
+                S.paused = false;
+                S.UI.pauseMenu.classList.remove('active');
+            }
+            // Otherwise wait briefly for pointerlockchange, not indefinitely.
+        }).catch(lockDenied);
+        setTimeout(lockDenied, 1200);
+    } catch (_) { lockDenied(); }
 };
 
 S.pauseGame = function pauseGame() { S.clearInventoryHover?.(); if (!S.running || S.dead || S.inventoryOpen || S.adminOpen || S.furnaceOpen || S.mapOpen)
@@ -43,7 +59,7 @@ document.addEventListener('pointerlockchange', () => {
 });
 
 document.addEventListener('mousemove', e => { if (!S.input.locked || S.paused)
-    return; S.player.yaw += e.movementX * S.input.sensitivity; S.player.pitch -= e.movementY * S.input.sensitivity; S.player.sway = S.clamp(S.player.sway + e.movementX * 0.0008, -.08, .08); S.player.pitch = S.clamp(S.player.pitch, -1.53, 1.53); });
+    return; const zoomScale=S.input.keys.has('KeyC')?.28:1; S.player.yaw += e.movementX * S.input.sensitivity*zoomScale; S.player.pitch -= e.movementY * S.input.sensitivity*zoomScale; S.player.sway = S.clamp(S.player.sway + e.movementX * 0.0008, -.08, .08); S.player.pitch = S.clamp(S.player.pitch, -1.53, 1.53); });
 
 document.addEventListener('keydown', e => {
     if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight', 'ControlLeft', 'F5'].includes(e.code))

@@ -216,7 +216,15 @@
     "forest_poultice": "Leśny okład",
     "healing_wrap": "Ziołowy opatrunek",
     "hunter_salve": "Maść tropiciela",
-    "campfire": "Ognisko"
+    "campfire": "Ognisko",
+    "village_house_kit": "Projekt domu osadnika",
+    "village_wall_kit": "Projekt muru wioski 3×3",
+    "village_forge_kit": "Projekt kuźni",
+    "village_farmer_kit": "Projekt chaty rolnika",
+    "village_farm_kit": "Projekt farmy",
+    "village_guard_kit": "Projekt strażnicy",
+    "village_armory_kit": "Projekt zbrojowni",
+    "village_granary_kit": "Projekt spichlerza"
   },
   "mobs": {
     "wolf": "wilk popielny",

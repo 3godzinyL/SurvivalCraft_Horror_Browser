@@ -1,3 +1,4 @@
+import {villageIslandHeight,stampVillageChunk} from './village-worldgen.js';
 // NightCraft V15 · native ES module (world/worldgen.js); installs into the explicit shared state.
 export function install(S) {
 S.CHUNK = 16;
@@ -77,7 +78,7 @@ S.terrainHeight = function terrainHeight(wx, wz) {
         const glade=S.fbm2(x*.014-813,z*.014+932);
         if(glade>.52&&glade<.62)h-=S.clamp((glade-.52)*15,0,1)*1.6;
     }
-    return S.clamp(Math.floor(h), 5, S.WORLD_H - 7);
+    return S.clamp(Math.floor(villageIslandHeight(S,wx,wz,h)), 5, S.WORLD_H - 7);
 };
 
 S.biomeAt = function biomeAt(wx, wz, hKnown = null) {
@@ -906,6 +907,9 @@ S.generateChunkData = function generateChunkData(cx, cz) {
                     if (r < .07)
                         decor = S.B.DRY_BUSH;
                 }
+                if((S.worldgenVersion||16)>=26 && [S.B.RED_FLOWER,S.B.WHITE_FLOWER,S.B.BLUE_FLOWER,S.B.YELLOW_FLOWER].includes(decor) && S.hash2i(wx,wz,S.worldSeed^0x3499)>.18){
+                    decor=patch>.64?S.B.FERN:patch>.48?S.B.BUSH:S.B.TALLGRASS;
+                }
                 if (decor !== S.B.AIR)
                     data[above] = decor;
             }
@@ -1013,6 +1017,7 @@ S.generateChunkData = function generateChunkData(cx, cz) {
             for(let i=0;i<5;i++)set(2,1+i,i-6,S.B.DEADWOOD);
         });
     }
+    stampVillageChunk(S,cx,cz,putW);
     for (const [key, val] of S.edits) {
         const [x, y, z] = key.split(',').map(Number);
         if (S.floorDiv(x, S.CHUNK) === cx && S.floorDiv(z, S.CHUNK) === cz && y >= 0 && y < S.WORLD_H)

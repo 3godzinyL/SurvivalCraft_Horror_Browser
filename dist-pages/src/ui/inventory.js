@@ -86,6 +86,13 @@ S.itemIconCanvas = function itemIconCanvas(id, cssClass = 'inv-icon') {
     const def = S.itemDefs[id] || {};
     const drawTile = (tile, dx = 4, dy = 4, dw = 24, dh = 24) => { const sx = (tile % S.atlas.cols) * S.atlas.tile, sy = Math.floor(tile / S.atlas.cols) * S.atlas.tile; x.drawImage(S.atlas.canvas, sx, sy, S.atlas.tile, S.atlas.tile, dx, dy, dw, dh); };
     const drawBlockIcon = (bid) => { const top = S.tileFor(bid, 'top'), side = S.tileFor(bid, 'side'); x.save(); x.beginPath(); x.moveTo(16, 3); x.lineTo(29, 10); x.lineTo(16, 17); x.lineTo(3, 10); x.closePath(); x.clip(); drawTile(top, 3, 3, 26, 14); x.restore(); x.save(); x.beginPath(); x.moveTo(3, 10); x.lineTo(16, 17); x.lineTo(16, 30); x.lineTo(3, 23); x.closePath(); x.clip(); drawTile(side, 3, 10, 13, 20); x.fillStyle = 'rgba(0,0,0,.12)'; x.fillRect(3, 10, 13, 20); x.restore(); x.save(); x.beginPath(); x.moveTo(16, 17); x.lineTo(29, 10); x.lineTo(29, 23); x.lineTo(16, 30); x.closePath(); x.clip(); drawTile(side, 16, 10, 13, 20); x.fillStyle = 'rgba(0,0,0,.28)'; x.fillRect(16, 10, 13, 20); x.restore(); x.strokeStyle = 'rgba(0,0,0,.55)'; x.lineWidth = 1; x.strokeRect(3.5, 10.5, 0, 0); };
+    if(id==='village_house_kit'||id==='village_wall_kit'){
+        x.fillStyle='#e0c68f';x.fillRect(5,4,22,25);x.strokeStyle='#785d36';x.lineWidth=2;x.strokeRect(5,4,22,25);
+        x.fillStyle='#4e4230';x.fillRect(7,6,18,3);
+        if(id==='village_house_kit'){x.fillStyle='#75563c';x.beginPath();x.moveTo(8,18);x.lineTo(16,10);x.lineTo(24,18);x.fill();x.fillRect(10,18,12,8);x.fillStyle='#ded5b5';x.fillRect(13,20,4,6);}
+        else {x.fillStyle='#71674f';for(let row=0;row<3;row++)for(let col=0;col<3;col++)x.fillRect(8+col*6,12+row*5,5,4);}
+        return c;
+    }
     if (def.armorSlot) {
         x.fillStyle = def.tier === 'iron' ? '#9baab4' : '#7a5237';
         x.strokeStyle = def.tier === 'iron' ? '#d4dfe5' : '#c69c6d';
@@ -1208,6 +1215,21 @@ S.renderFullMap = function renderFullMap(force=false) {
         if(height>58){ctx.fillStyle='rgba(220,230,223,.14)';ctx.fillRect(i*cell,j*cell,Math.ceil(cell)+1,Math.ceil(cell)+1);}
     }
     const coords=(x,z)=>[W/2+(x-v.x)/radius*(W/2),H/2+(z-v.z)/radius*(H/2)];
+    // Guidance on the WORLD MAP: visualise the current leg and the safe
+    // western crossing, not a misleading direct line through the lagoon.
+    if(S.villagePlan&&S.villageNavigation?.target){
+        const destination=S.villagePlan,following=!S.waypoint||Math.hypot(S.waypoint.x-destination.x,S.waypoint.z-destination.z)<5;
+        if(following){
+            const [pX,pZ]=coords(S.player.pos[0],S.player.pos[2]);
+            const [wX,wZ]=coords(S.villageNavigation.target.x,S.villageNavigation.target.z);
+            const [bX,bZ]=coords(destination.x-84,destination.z);
+            const [cX,cZ]=coords(destination.x,destination.z+8);
+            ctx.save();ctx.strokeStyle='#ffd57b';ctx.lineWidth=3.4;ctx.lineJoin='round';ctx.lineCap='round';ctx.setLineDash([9,5]);
+            ctx.beginPath();ctx.moveTo(pX,pZ);ctx.lineTo(wX,wZ);
+            if(Math.hypot(wX-bX,wZ-bZ)<W*.32){ctx.lineTo(bX,bZ);ctx.lineTo(cX,cZ);}
+            ctx.stroke();ctx.setLineDash([]);ctx.restore();
+        }
+    }
     const mark=(x,z,col,size,name='')=>{
         const [mx,mz]=coords(x,z);if(Math.hypot(mx-W/2,mz-H/2)>W*.49)return;
         ctx.fillStyle=col;ctx.strokeStyle='rgba(0,0,0,.95)';ctx.lineWidth=2;
@@ -1227,6 +1249,7 @@ S.renderFullMap = function renderFullMap(force=false) {
         }
     }
     if(S.worldSpawn)mark(S.worldSpawn[0],S.worldSpawn[2],'#d4ddbd',5,'SPAWN');
+    if(S.villagePlan){mark(S.villagePlan.x,S.villagePlan.z,'#e7c773',9,'MŁYN · OSADA');mark(S.villagePlan.x-127,S.villagePlan.z,'#f5cc74',5,'ZACHODNIA GROBLA');mark(S.villagePlan.x-12,S.villagePlan.z-35,'#c4d0ce',6,'WEJŚCIE DO KOPALNI');}
     if(S.lastDeathPosition)mark(S.lastDeathPosition[0],S.lastDeathPosition[2],'#dd5f69',6,'OSTATNIA ŚMIERĆ');
     if(S.waypoint)mark(S.waypoint.x,S.waypoint.z,'#ffe39b',7,'CEL · '+Math.round(Math.hypot(S.waypoint.x-S.player.pos[0],S.waypoint.z-S.player.pos[2]))+' m');
     if(S.starterChestPos)mark(S.starterChestPos[0],S.starterChestPos[2],'#f2b84f',4,'SKRZYNIA');

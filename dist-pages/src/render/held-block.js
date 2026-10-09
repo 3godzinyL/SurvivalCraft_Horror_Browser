@@ -1,14 +1,18 @@
+import {vertexWaterDepth} from './water-depth.js';
+import {LOG_NAMES} from '../sim/falling-trees.js';
+import {buildSkyColumns, skyAt} from "./lighting.js";
 // NightCraft V15 · native ES module (render/held-block.js); installs into the explicit shared state.
 export function install(S) {
 S.heldBlockProgram = S.makeProgram(`
-    attribute vec3 aPos; attribute vec3 aNormal; attribute vec2 aUV; uniform mat4 uMVP; varying mediump vec3 vN; varying mediump vec2 vUV;
+    attribute vec3 aPos; attribute vec3 aNormal; attribute vec2 aUV; uniform mat4 uMVP; varying mediump vec3 vN; varying highp vec2 vUV;
     void main(){vN=aNormal;vUV=aUV;gl_Position=uMVP*vec4(aPos,1.0);}
   `, `
-    precision mediump float; varying mediump vec3 vN; varying mediump vec2 vUV; uniform sampler2D uTex;
-    void main(){vec4 t=texture2D(uTex,vUV);if(t.a<.12)discard;vec3 n=normalize(vN);float l=.72+max(0.0,dot(n,normalize(vec3(-.4,.82,.32))))*.28;gl_FragColor=vec4(t.rgb*l,t.a);}
+    precision mediump float; varying mediump vec3 vN; varying highp vec2 vUV;
+    uniform sampler2D uTex;uniform float uLight;uniform float uFogFactor;uniform vec3 uFogColor;
+    void main(){vec4 t=texture2D(uTex,vUV);if(t.a<.12)discard;vec3 n=normalize(vN);float l=.72+max(0.0,dot(n,normalize(vec3(-.4,.82,.32))))*.28;vec3 col=mix(t.rgb*l*uLight,uFogColor,uFogFactor);gl_FragColor=vec4(col,t.a);}
   `);
 
-S.HBL = { pos: S.gl.getAttribLocation(S.heldBlockProgram, 'aPos'), normal: S.gl.getAttribLocation(S.heldBlockProgram, 'aNormal'), uv: S.gl.getAttribLocation(S.heldBlockProgram, 'aUV'), mvp: S.gl.getUniformLocation(S.heldBlockProgram, 'uMVP'), tex: S.gl.getUniformLocation(S.heldBlockProgram, 'uTex') };
+S.HBL = { pos: S.gl.getAttribLocation(S.heldBlockProgram, 'aPos'), normal: S.gl.getAttribLocation(S.heldBlockProgram, 'aNormal'), uv: S.gl.getAttribLocation(S.heldBlockProgram, 'aUV'), mvp: S.gl.getUniformLocation(S.heldBlockProgram, 'uMVP'), tex: S.gl.getUniformLocation(S.heldBlockProgram, 'uTex'), light:S.gl.getUniformLocation(S.heldBlockProgram,'uLight'), fogFactor:S.gl.getUniformLocation(S.heldBlockProgram,'uFogFactor'), fogColor:S.gl.getUniformLocation(S.heldBlockProgram,'uFogColor') };
 
 S.heldBlockMeshes = new Map();
 
@@ -31,15 +35,31 @@ S.heldBlockMeshFor = function heldBlockMeshFor(id) {
     return m;
 };
 
-S.drawHeldTexturedBlock = function drawHeldTexturedBlock(VP, pos, scale, id, ry = 0, rx = 0, rz = 0) {
+S.drawHeldTexturedBlock = function drawHeldTexturedBlock(VP, pos, scale, id, ry = 0, rx = 0, rz = 0, world = null) {
     const m = S.heldBlockMeshFor(id);
     if (!m)
         return;
     const mvp = S.M4.multiply(VP, S.modelMatrix(pos, scale, ry, rx, rz));
     S.gl.useProgram(S.heldBlockProgram);
     S.gl.uniformMatrix4fv(S.HBL.mvp, false, mvp);
+    // Tool and inventory rendering stays as before. Architectural models
+    // share the world's night light, fog and nearby lantern intensity.
+    if(world?.cam){
+        // World-space architectural blocks must obey the SAME shaded, short-range
+        // light as voxels/NPCs. Previous 16-block torch glow made house doors
+        // appear self-luminous despite night or a solid roof overhead.
+        const light=S.colorLightAt?S.colorLightAt(pos):Math.max(.025,.72*S.sunLevel());
+        S.gl.uniform1f(S.HBL.light,Math.max(.025,Math.min(.94,light)));
+        const visibility=S.renderDistance*S.CHUNK;
+        S.gl.uniform1f(S.HBL.fogFactor,S.clamp((S.dist3(pos,world.cam)-visibility*.35)/(visibility*.62),0,1));
+        S.gl.uniform3fv(S.HBL.fogColor,world.fogColor);
+    }else{
+        S.gl.uniform1f(S.HBL.light,1);
+        S.gl.uniform1f(S.HBL.fogFactor,0);
+        S.gl.uniform3fv(S.HBL.fogColor,[0,0,0]);
+    }
     S.gl.activeTexture(S.gl.TEXTURE0);
-    S.gl.bindTexture(S.gl.TEXTURE_2D, S.atlas.tex);
+    S.gl.bindTexture(S.gl.TEXTURE_2D, S.atlas.sharpTex||S.atlas.tex);
     S.gl.uniform1i(S.HBL.tex, 0);
     S.gl.bindBuffer(S.gl.ARRAY_BUFFER, m.p);
     S.gl.enableVertexAttribArray(S.HBL.pos);
@@ -53,13 +73,13 @@ S.drawHeldTexturedBlock = function drawHeldTexturedBlock(VP, pos, scale, id, ry 
     S.gl.drawArrays(S.gl.TRIANGLES, 0, m.count);
 };
 
-S.shouldExpose = function shouldExpose(id, nid) { if (id === S.B.WATER)
-    return nid !== S.B.WATER && nid === S.B.AIR; if (id === S.B.GLASS)
+S.shouldExpose = function shouldExpose(id, nid) { if([S.B.WOOD_DOOR,S.B.WOOD_FENCE,S.B.WOOD_STAIRS].includes(nid))return true; if (id === S.B.WATER)
+    return nid !== S.B.WATER && (nid === S.B.AIR || nid === S.B.TORCH || S.blockDefs[nid]?.decor || S.isFoliage(nid)); if (id === S.B.GLASS)
     return nid !== S.B.GLASS && (nid === S.B.AIR || nid === S.B.WATER || S.blockDefs[nid]?.transparent); if (S.isFoliage(id))
     return nid === S.B.AIR || nid === S.B.WATER || nid === S.B.TORCH || S.blockDefs[nid]?.decor; if (id === S.B.TORCH || S.blockDefs[id]?.decor)
     return false; return nid === S.B.AIR || nid === S.B.WATER || nid === S.B.TORCH || S.blockDefs[nid]?.decor || S.isFoliage(nid); };
 
-S.makeMeshBuffers = function makeMeshBuffers(pos, nor, uv, wind = null) {
+S.makeMeshBuffers = function makeMeshBuffers(pos, nor, uv, wind = null, tint = null, sky = null, depth = null) {
     if (!pos.length)
         return null;
     const obj = { count: pos.length / 3 };
@@ -73,11 +93,14 @@ S.makeMeshBuffers = function makeMeshBuffers(pos, nor, uv, wind = null) {
     S.gl.bindBuffer(S.gl.ARRAY_BUFFER, obj.u);
     S.gl.bufferData(S.gl.ARRAY_BUFFER, new Float32Array(uv), S.gl.STATIC_DRAW);
     if (wind && wind.length===obj.count) { obj.wind=S.gl.createBuffer();S.gl.bindBuffer(S.gl.ARRAY_BUFFER,obj.wind);S.gl.bufferData(S.gl.ARRAY_BUFFER,new Uint8Array(wind),S.gl.STATIC_DRAW); }
+    if (tint && tint.length===obj.count*3) {obj.tint=S.gl.createBuffer();S.gl.bindBuffer(S.gl.ARRAY_BUFFER,obj.tint);S.gl.bufferData(S.gl.ARRAY_BUFFER,new Uint8Array(tint),S.gl.STATIC_DRAW);}
+    if(sky && sky.length===obj.count){obj.sky=S.gl.createBuffer();S.gl.bindBuffer(S.gl.ARRAY_BUFFER,obj.sky);S.gl.bufferData(S.gl.ARRAY_BUFFER,new Uint8Array(sky),S.gl.STATIC_DRAW);}
+    if(depth&&depth.length===obj.count){obj.depth=S.gl.createBuffer();S.gl.bindBuffer(S.gl.ARRAY_BUFFER,obj.depth);S.gl.bufferData(S.gl.ARRAY_BUFFER,new Uint8Array(depth),S.gl.STATIC_DRAW);}
     return obj;
 };
 
 S.deleteMesh = function deleteMesh(m) { if (!m)
-    return; S.gl.deleteBuffer(m.p); S.gl.deleteBuffer(m.n); S.gl.deleteBuffer(m.u); if(m.wind)S.gl.deleteBuffer(m.wind); };
+    return; S.gl.deleteBuffer(m.p); S.gl.deleteBuffer(m.n); S.gl.deleteBuffer(m.u); if(m.depth)S.gl.deleteBuffer(m.depth); if(m.sky)S.gl.deleteBuffer(m.sky); if(m.wind)S.gl.deleteBuffer(m.wind); if(m.tint)S.gl.deleteBuffer(m.tint); };
 
 S.pushDecorMesh = function pushDecorMesh(P,N,U,W,wx,y,wz,id) {
     const tile=S.tileFor(id,'side'), flower=S.isBillboardPlant(id);
@@ -97,41 +120,104 @@ S.pushDecorMesh = function pushDecorMesh(P,N,U,W,wx,y,wz,id) {
     }
 };
 
+/** Real UV-mapped cuboids for generated fences. They are batched with the
+ * chunk mesh (not S.edits), so worldgen fences don't become invisible colliders.
+ * UVs are generated from the game's real atlas and match ordinary voxel blocks. */
+S.appendConstructionCuboid = function appendConstructionCuboid(P,N,U,W, x0,y0,z0,x1,y1,z1, id) {
+    const sizes=[x1-x0,y1-y0,z1-z0];
+    for(const f of S.faces){
+        const tile=S.tileFor(id,f.side),fuv=f.uv||S.faceUV;
+        for(let i=0;i<6;i++){
+            const v=f.v[i];
+            P.push(x0+v[0]*sizes[0],y0+v[1]*sizes[1],z0+v[2]*sizes[2]);
+            N.push(...f.n);
+            const uv=S.tileUV(tile,fuv[i][0],fuv[i][1]);U.push(uv[0],uv[1]);W.push(0);
+        }
+    }
+};
+S.appendFenceMesh = function appendFenceMesh(P,N,U,W,x,y,z) {
+    const a=(x0,y0,z0,x1,y1,z1)=>S.appendConstructionCuboid(P,N,U,W,x0,y0,z0,x1,y1,z1,S.B.WOOD_FENCE);
+    // 4-sided post + two spaced rails on each direction with a real connection.
+    a(x+.39,y,z+.39,x+.61,y+1.12,z+.61);
+    const connected=(xx,zz)=>{
+        const nid=S.peekLoadedBlock(xx,y,zz);
+        return nid===S.B.WOOD_FENCE || (nid!==S.B.AIR && nid!==S.B.WATER && nid!==S.B.WOOD_DOOR && !S.blockDefs[nid]?.decor && !!S.blockDefs[nid]?.solid);
+    };
+    for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]])if(connected(x+dx,z+dz)){
+        const right=dx>0,front=dz>0;
+        for(const yy of [.36,.75]){
+            if(dx!==0)a(x+(right?.5:0),y+yy,z+.445,x+(right?1:.5),y+yy+.12,z+.555);
+            else a(x+.445,y+yy,z+(front?.5:0),x+.555,y+yy+.12,z+(front?1:.5));
+        }
+    }
+};
+
 S.rebuildChunk = function rebuildChunk(c) {
     S.deleteMesh(c.opaque);
     S.deleteMesh(c.water);
-    const op = [], on = [], ou = [], ow = [], wp = [], wn = [], wu = [], ww = [];
+    S.deleteMesh(c.flora);
+    c.sky=buildSkyColumns(S,c);
+    const op = [], on = [], ou = [], ow = [], wp = [], wn = [], wu = [], ww = [], wd=[];
+    const depths=new Map();
+    let renderMinY=S.WORLD_H, renderMaxY=0;
+    // Torches generated in villages must be rendered and illuminate rooms, too.
+    c.torches=[];
     const ox = c.cx * S.CHUNK, oz = c.cz * S.CHUNK;
     for (let y = 0; y < S.WORLD_H; y++)
         for (let lz = 0; lz < S.CHUNK; lz++)
             for (let lx = 0; lx < S.CHUNK; lx++) {
                 const id = c.data[S.idx3(lx, y, lz)];
-                if (id === S.B.AIR || id === S.B.TORCH || id === S.B.BEDROLL || id === S.B.CAMPFIRE || id === S.B.WOOD_DOOR || id === S.B.WOOD_STAIRS || id === S.B.WOOD_FENCE)
+                const wx = ox + lx, wz = oz + lz;
+                if(id===S.B.TORCH){ c.torches.push([wx,y,wz]);continue; }
+                if(id===S.B.WOOD_FENCE){S.appendFenceMesh(op,on,ou,ow,wx,y,wz);renderMinY=Math.min(renderMinY,y);renderMaxY=Math.max(renderMaxY,y+2);continue;}
+                if (id === S.B.AIR || id === S.B.BEDROLL || id === S.B.CAMPFIRE || id === S.B.WOOD_DOOR || id === S.B.WOOD_STAIRS)
                     continue;
-                const wx = ox + lx, wz = oz + lz, isWater = id === S.B.WATER;
+                const isWater = id === S.B.WATER, isLeaf=S.isFoliage(id);
+                const naturalLog=LOG_NAMES.some(k=>S.B[k]===id) && !S.edits.has(S.editKey(wx,y,wz)) && (!S.villagePlan || Math.hypot(wx-S.villagePlan.x,wz-S.villagePlan.z)>52);
+                const logWind=naturalLog?Math.min(18,Math.max(1,y-S.terrainHeight(wx,wz))):0;
                 const P = isWater ? wp : op, N = isWater ? wn : on, U = isWater ? wu : ou, W=isWater?ww:ow;
                 if (S.blockDefs[id]?.decor) {
                     S.pushDecorMesh(P, N, U, W, wx, y, wz, id);
+                    renderMinY=Math.min(renderMinY,y);renderMaxY=Math.max(renderMaxY,y+2);
                     continue;
                 }
                 for (const f of S.faces) {
                     const nid = S.peekLoadedBlock(wx + f.n[0], y + f.n[1], wz + f.n[2]);
                     if (!S.shouldExpose(id, nid))
                         continue;
+                    renderMinY=Math.min(renderMinY,y);renderMaxY=Math.max(renderMaxY,y+1);
                     const tile = S.tileFor(id, f.side);
-                    for (let i = 0; i < 6; i++) {
-                        const v = f.v[i];
+                    // Leaf backs give cutout holes real canopy depth. Keep them
+                    // in the existing batch, without another draw per chunk.
+                    for (let i = 0; i < (isLeaf?12:6); i++) {
+                        const back=i>=6,j=back?Math.floor((i-6)/3)*3+2-(i-6)%3:i;
+                        const v = f.v[j],sign=back?-1:1;
                         P.push(wx + v[0], y + v[1], wz + v[2]);
-                        N.push(f.n[0], f.n[1], f.n[2]);
+                        N.push(sign*f.n[0],sign*f.n[1],sign*f.n[2]);
+                        if(isWater){const key=(wx+v[0])+","+(wz+v[2])+","+(y+1);if(!depths.has(key))depths.set(key,Math.round(vertexWaterDepth(S,wx+v[0],wz+v[2],y+1)*255/16));wd.push(depths.get(key));}
                         const fuv=f.uv||S.faceUV;
-                        const tuv=S.tileUV(tile,fuv[i][0],fuv[i][1]);
+                        const tuv=S.tileUV(tile,fuv[j][0],fuv[j][1]);
                         U.push(tuv[0], tuv[1]);
-                        W.push(S.isFoliage(id)?105:0);
+                        W.push(isLeaf?105:logWind);
                     }
                 }
             }
-    c.opaque = S.makeMeshBuffers(op, on, ou, ow);
-    c.water = S.makeMeshBuffers(wp, wn, wu, ww);
+    const exposure=(p,n)=>{
+      const sky=[];
+      for(let i=0;i<p.length;i+=18){
+        const pos=[0,1,2].map(k=>(p[i+k]+p[i+3+k]+p[i+6+k])/3+n[i+k]*.03);
+        const value=Math.round(255*skyAt(S,pos));
+        sky.push(value,value,value,value,value,value);
+      }
+      return sky;
+    };
+    c.opaque = S.makeMeshBuffers(op, on, ou, ow, null, exposure(op,on));
+    c.water = S.makeMeshBuffers(wp, wn, wu, ww, null, exposure(wp,wn),wd);
+    const floraNear=!S.player || Math.hypot((c.cx+.5)*S.CHUNK-S.player.pos[0],(c.cz+.5)*S.CHUNK-S.player.pos[2])<=(S.graphics?.vegetation||80)+S.CHUNK*2;
+    c.flora = floraNear?(S.buildChunkFlora?.(c)||null):null;c.floraBuilt=floraNear;c.floraPending=false;
+    c.renderMinY=renderMinY<S.WORLD_H?renderMinY:0;
+    c.renderMaxY=renderMaxY>0?renderMaxY:S.WORLD_H;
+    S.worldLampTimer=Math.min(S.worldLampTimer||0,.15);
     c.dirty = false;
     S.dirtyChunks.delete(S.chunkKey(c.cx, c.cz));
 };
@@ -144,7 +230,8 @@ S.processDirty = function processDirty(max = 2) {
     for (const key of S.dirtyChunks) {
         if(++inspected>96 || (n>0 && performance.now()-started>5.0))break;
     const c = S.chunks.get(key);
-    if (c && c.dirty) {
+    if(c?.floraPending&&!c.dirty){S.deleteMesh(c.flora);c.flora=S.buildChunkFlora?.(c)||null;c.floraBuilt=true;c.floraPending=false;S.dirtyChunks.delete(key);if(++n>=max)break;}
+    else if (c && c.dirty) {
         S.rebuildChunk(c);
         if (++n >= max)
             break;
@@ -161,7 +248,7 @@ S.updateStreaming = function updateStreaming(px, pz, force = false) {
     // re-evaluate evictions at 60–144 FPS. A changed chunk bypasses throttle.
     if(!force && S.streamCenter===center && now-(S.streamLastScan||0)<145)return;
     S.streamCenter=center;S.streamLastScan=now;
-    const radius=Math.max(2,Math.min(12,S.renderDistance|0)),keep=radius+1;
+    const radius=Math.max(2,Math.min(24,S.renderDistance|0)),keep=radius+1;
     S.chunkWorker?.setFocus(pcx,pcz,keep);
     // Cache the ring offsets. Sort nearest first to avoid empty nearby scenery.
     if (!S.streamOffsets || S.streamRadius!==radius) {
@@ -177,20 +264,20 @@ S.updateStreaming = function updateStreaming(px, pz, force = false) {
     // in small batches. A larger draw distance must not freeze the main thread.
     for(const [dx,dz,dist2] of S.streamOffsets){
         const cx=pcx+dx,cz=pcz+dz,k=S.chunkKey(cx,cz);
-        if(S.chunks.has(k))continue;
+        if(S.chunks.has(k)){const c=S.chunks.get(k);if(!c.floraBuilt&&c.opaque&&!c.floraPending&&Math.hypot((cx+.5)*S.CHUNK-px,(cz+.5)*S.CHUNK-pz)<=(S.graphics?.vegetation||80)+S.CHUNK*2){c.floraPending=true;S.dirtyChunks.add(k);}continue;}
         if(S.chunkWorker?.isRequested(cx,cz))continue;
-        if(dist2<=4){
-            if(nearBuilt++>= (force?13:2))continue;
+        if(dist2<=1){
+            if(nearBuilt++>= (force?5:1))continue;
             S.ensureChunk(cx,cz);continue;
         }
-        if(requests>=12)break;
+        if(requests>=8)break;
         if(S.chunkWorker?.request(cx,cz))requests++;
         else if(!S.chunkWorker?.ready && requests<2){S.ensureChunk(cx,cz);requests++;}
     }
     // Incremental evictions keep the memory bounded when traveling far away.
     for(const [key,c] of S.chunks){
         if(Math.abs(c.cx-pcx)>keep||Math.abs(c.cz-pcz)>keep){
-            S.deleteMesh(c.opaque); S.deleteMesh(c.water);
+            S.deleteMesh(c.opaque); S.deleteMesh(c.water); S.deleteMesh(c.flora);
             S.chunks.delete(key); S.dirtyChunks.delete(key);
             S.markDirty(c.cx-1,c.cz); S.markDirty(c.cx+1,c.cz);
             S.markDirty(c.cx,c.cz-1); S.markDirty(c.cx,c.cz+1);

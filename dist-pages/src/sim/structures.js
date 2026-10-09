@@ -27,8 +27,9 @@ S.fortKey = function fortKey(x, y, z) { return `${Math.floor(x)},${Math.floor(y)
 S.isUpgradeableBlockId = function isUpgradeableBlockId(id) { return S.UPGRADEABLE_BLOCKS.has(id); };
 
 S.ensureFortification = function ensureFortification(x, y, z, id = S.getBlock(x, y, z), create = true) { const key = S.fortKey(x, y, z); let f = S.fortifications.get(key); if (f)
-    return f; if (!create || !S.isUpgradeableBlockId(id) || !S.edits.has(key))
-    return null; const family=S.WALL_FAMILIES.has(id)?id:null, t = family ? {maxHp:S.WALL_FAMILIES.get(id).hp} : S.FORT_TIERS[0]; f = { tier: 0, family, level:0, hp: t.maxHp, maxHp: t.maxHp, type: S.blockDefs[id]?.construction || 'wall', orientation: 0, open: false, lastHit: 0 }; S.fortifications.set(key, f); return f; };
+    return f; if (!create || !S.isUpgradeableBlockId(id) || (!S.edits.has(key) && id!==S.B.WOOD_DOOR))
+    return null; const villageDoor=id===S.B.WOOD_DOOR && !S.edits.has(key) && S.villagePlan && Math.hypot(x-S.villagePlan.x,z-S.villagePlan.z)<48;
+    const family=S.WALL_FAMILIES.has(id)?id:null, t = family ? {maxHp:S.WALL_FAMILIES.get(id).hp} : S.FORT_TIERS[villageDoor?5:0]; f = { tier: villageDoor?5:0, family, level:0, hp: t.maxHp, maxHp: t.maxHp, type: S.blockDefs[id]?.construction || 'wall', orientation: 0, open: false, lastHit: 0 }; S.fortifications.set(key, f); return f; };
 
 S.fortTierAt = function fortTierAt(x, y, z) { return S.ensureFortification(x, y, z, S.getBlock(x, y, z), false)?.tier || 0; };
 
@@ -55,7 +56,7 @@ S.upgradeMessageCooldown = 0;
 
 S.updateFortifyHud = function updateFortifyHud(hit=null) {
     if(!S.UI.fortifyHud)return;
-    const f=hit?S.ensureFortification(hit.x,hit.y,hit.z,hit.id,S.WALL_FAMILIES.has(hit.id)):null;
+    const f=hit?S.ensureFortification(hit.x,hit.y,hit.z,hit.id,S.isUpgradeableBlockId(hit.id)):null;
     S.UI.fortifyHud.classList.toggle('hidden',!f);
     if(!f)return;
     const st=S.wallStats(f),next=f.family?(f.level<3?{cost:{id:S.WALL_FAMILIES.get(f.family).item,count:[3,6,9][f.level]}}:null):S.FORT_TIERS[f.tier+1];

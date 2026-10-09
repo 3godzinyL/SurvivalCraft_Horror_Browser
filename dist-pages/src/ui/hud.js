@@ -41,7 +41,7 @@ S.updateHUD = function updateHUD(dt) {
         S.UI.compassStrip.style.backgroundPositionX = `${(-hd * 1.65).toFixed(1)}px`;
     }
     if(S.UI.waypointHud){
-        S.UI.waypointHud.classList.toggle('hidden',!S.waypoint);
+        S.UI.waypointHud.classList.toggle('hidden',!S.waypoint||!!(S.villagePlan&&Math.hypot(S.waypoint.x-S.villagePlan.x,S.waypoint.z-S.villagePlan.z)<2));
         if(S.waypoint){
             const dx=S.waypoint.x-S.player.pos[0],dz=S.waypoint.z-S.player.pos[2];
             const desired=Math.atan2(dx,-dz);
@@ -50,6 +50,7 @@ S.updateHUD = function updateHUD(dt) {
             S.UI.waypointText.textContent=`CEL · ${Math.round(Math.hypot(dx,dz))} kratek · X ${S.waypoint.x} Z ${S.waypoint.z}`;
         }
     }
+    S.updateVillageNavigation?.();
     S.updateArmorMiniHud();
     if (S.UI.scanWave)
         S.UI.scanWave.style.opacity = String(S.scanPulse > 0 ? S.clamp(S.scanPulse, 0, .8) : 0);
@@ -100,12 +101,43 @@ S.updateHUD = function updateHUD(dt) {
         S.fpsFrames = 0;
     }
     if (S.debug)
-        S.UI.debugPanel.textContent = `FPS ${S.fps}\nXYZ ${S.player.pos.map(v => v.toFixed(2)).join(' ')}\nchunk ${S.floorDiv(S.player.pos[0], S.CHUNK)}, ${S.floorDiv(S.player.pos[2], S.CHUNK)}\nchunks ${S.chunks.size} · meshQ ${S.dirtyChunks.size}\nenemies ${S.enemies.length} · birds ${S.birds.length} · drops ${S.droppedItems.length} · particles ${S.particles.length}\nmined ${S.player.blocksMined} · kills ${S.player.kills} · walked ${(S.player.distanceWalked || 0).toFixed(1)}m\nweather ${S.weatherMode}\nseed ${S.worldSeed}\nnight ${(night * 100).toFixed(0)}% · noc ${S.currentNightNumber()} · ${S.currentWorldHour().toFixed(2)}h\nWebGL ${S.gl.getParameter(S.gl.VERSION)}`;
+        S.UI.debugPanel.textContent = `FPS ${S.fps}\nXYZ ${S.player.pos.map(v => v.toFixed(2)).join(' ')}\nchunk ${S.floorDiv(S.player.pos[0], S.CHUNK)}, ${S.floorDiv(S.player.pos[2], S.CHUNK)}\nchunks ${S.chunks.size} · visible ${S.visibleChunks||0} · meshQ ${S.dirtyChunks.size} · culled boxes ${S.frameBoxCull||0}\nenemies ${S.enemies.length} · birds ${S.birds.length} · drops ${S.droppedItems.length} · particles ${S.particles.length}\nmined ${S.player.blocksMined} · kills ${S.player.kills} · walked ${(S.player.distanceWalked || 0).toFixed(1)}m\nweather ${S.weatherMode}\nseed ${S.worldSeed}\nnight ${(night * 100).toFixed(0)}% · noc ${S.currentNightNumber()} · ${S.currentWorldHour().toFixed(2)}h\nWebGL ${S.gl.getParameter(S.gl.VERSION)}`;
 };
 
-S.frame = function frame(now) { const dt = Math.min(.05, (now - S.lastTime) / 1000 || .016); S.lastTime = now; if (S.running && !S.paused && !S.dead)
-    S.updateWorld(dt); S.render(); S.updateHUD(dt); S.updateMinimap(dt); S.netUpdate?.(now); if (S.mapOpen)
-    S.renderFullMap(); requestAnimationFrame(S.frame); };
+S.frame = function frame(now) {
+    const dt = Math.min(.05, (now - S.lastTime) / 1000 || .016);
+    S.lastTime = now;
+    try {
+        if (S.running && !S.paused && !S.dead) S.updateWorld(dt);
+        if (S.running && !S.paused && !S.dead) S.updateVillage?.(dt);
+        S.render();
+        S.updateHUD(dt);
+        S.updateVillageChiefPrompt?.();
+        S.updateMinimap(dt);
+        S.netUpdate?.(now);
+        if (S.mapOpen) S.renderFullMap();
+    } catch (err) {
+        // V28 used to stop scheduling animation frames when a render routine
+        // threw. Input events still worked, but world/camera movement froze.
+        // Keep the loop alive and make future faults visible for diagnosis.
+        if (!S.lastFrameFaultTime || now - S.lastFrameFaultTime >= 3000) {
+            S.lastFrameFaultTime = now || 1;
+            console.error('NightCraft frame error (simulation/render):', err);
+            try {
+                let notice = document.getElementById('gameRuntimeError');
+                if (!notice) {
+                    notice = document.createElement('div');
+                    notice.id = 'gameRuntimeError';
+                    notice.style.cssText = 'position:fixed;z-index:300;left:50%;top:10%;transform:translateX(-50%);max-width:92vw;background:#310f0ff2;color:#ffe4d9;border:1px solid #cb7766;padding:9px 14px;font:12px monospace;text-align:center;pointer-events:none';
+                    document.body.append(notice);
+                }
+                notice.textContent = `Błąd klatki gry: ${String(err?.message || err)}. Szczegóły w konsoli F12.`;
+            } catch (_) { /* a diagnostic overlay must never stop the loop */ }
+        }
+    } finally {
+        requestAnimationFrame(S.frame);
+    }
+};
 
 requestAnimationFrame(S.frame);
 }

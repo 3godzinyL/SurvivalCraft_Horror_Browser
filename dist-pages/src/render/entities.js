@@ -25,7 +25,7 @@ S.gl.bindBuffer(S.gl.ARRAY_BUFFER, S.outlineBuffer);
 
 S.gl.bufferData(S.gl.ARRAY_BUFFER, new Float32Array(S.outlineVerts), S.gl.STATIC_DRAW);
 
-// Six complete faces per damage stage: each +4% uncovers one more fine
+// Six complete faces per damage stage: each +4% uncovers one more branching
 // fracture on EVERY face.  The old buffer interleaved whole faces and
 // truncating by percentage made the other five faces look undamaged.
 S.crackVerts = [];
@@ -45,7 +45,7 @@ S.crackVertsPerStage=36; // one ribbon = 6 vertices, 6 faces
     }
     // A few branching fracture networks instead of 24 radial star-spokes.
     // Every stage adds ONE small linked segment on each face; after a couple
-    // of percent damage even all six faces show fine but subtle cracking.
+    // of percent damage even all six faces show readable branching cracks.
     const branches=[
       [[.17,.13],[.32,.23],[.42,.33],[.51,.48],[.57,.61],[.67,.70],[.78,.78],[.90,.86],[.95,.90]],
       [[.42,.33],[.39,.44],[.31,.52],[.24,.61],[.18,.71],[.13,.79]],
@@ -68,7 +68,7 @@ S.crackVertsPerStage=36; // one ribbon = 6 vertices, 6 faces
         // Stable tiny per-face offset avoids perfect repeated screen-space glyphs.
         const offset=(face-2.5)*.005;
         const clamp=x=>Math.max(.02,Math.min(.98,x));
-        ribbon(axis,fixed,clamp(ax+offset),clamp(ay-offset),clamp(bx+offset),clamp(by-offset),.0010+(stage%6===0?.00032:0),face===0||face===2||face===5);
+        ribbon(axis,fixed,clamp(ax+offset),clamp(ay-offset),clamp(bx+offset),clamp(by-offset),.011+(stage%6===0?.004:0),face===0||face===2||face===5);
       }
     }
 })();

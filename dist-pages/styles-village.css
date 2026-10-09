@@ -1,0 +1,114 @@
+/* NightCraft V26 village campaign — parchment, muted bronze, architectural preview UI */
+.village-overlay{position:fixed;inset:0;z-index:4200;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at 50% 46%,rgba(30,29,25,.78),rgba(2,6,6,.95));backdrop-filter:blur(9px);pointer-events:auto}
+.village-overlay.hidden,.village-quest-hud.hidden{display:none!important}
+.guide-book{width:min(960px,96vw);min-height:500px;display:grid;grid-template-columns:1fr 1fr;border:8px solid #33281d;border-radius:13px 23px 23px 12px;background:linear-gradient(90deg,#211b13 0%,#292015 49.7%,#211b13 50.3%,#292015 100%);box-shadow:0 28px 90px #000b,0 0 0 2px #998457, inset 0 0 0 3px #58462b;overflow:hidden;color:#382f22;font-family:Georgia,serif;position:relative}
+.guide-book:after{content:'';position:absolute;top:0;bottom:0;left:49.8%;width:10px;background:linear-gradient(90deg,#977e56,#2b241a,#aa9168);pointer-events:none;box-shadow:1px 0 13px #21190b66}
+.guide-leaf{padding:30px 36px;background:radial-gradient(ellipse at 40% 30%,#e0d4ad,#c4ae81 92%);box-shadow:inset 0 0 45px #6044235c;min-width:0}
+.guide-right{display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 20%,#e9dcb7,#c7b287 96%)}
+.guide-book .folio{font-size:11px;letter-spacing:.24em;color:#65563a;font-weight:700;text-transform:uppercase}
+.guide-book h2{font-size:clamp(22px,3vw,37px);margin:14px 0 8px;line-height:1.1;color:#342c20;text-shadow:0 1px #f7e7b9}
+.guide-divider{height:2px;background:linear-gradient(90deg,transparent,#89724c,transparent);margin:14px 0}
+.guide-art{height:280px;margin-top:28px;border-radius:45% 45% 5px 5px;overflow:hidden;position:relative;box-shadow:inset 0 -40px 30px #162b2988,0 8px 16px #402c2455;border:3px solid #867149;background:linear-gradient(#879c9a 0%,#c2ba83 47%,#516e4a 48%,#1c473b 100%)}
+.guide-art:before{content:'♠  ♠    ♠  ♠   ♠  ♠';position:absolute;bottom:19%;left:-12%;width:130%;font-size:125px;line-height:1;letter-spacing:-16px;color:#263f35;text-shadow:13px 12px #102a25,28px -3px #3b5644,65px 10px #22382a;transform:scaleY(1.5)}
+.guide-art:after{content:'☾';font:110px Georgia;position:absolute;top:6%;right:15%;color:#eddea7cc;text-shadow:0 0 22px #f5ebaf77}
+.guide-art-walls{background:linear-gradient(#666a62 0%,#777b70 47%,#4a4236 47%,#312b25 100%)}
+.guide-art-walls:before{content:'▥ ▥ ▥ ▥';font-size:130px;letter-spacing:-8px;color:#6f5b43;text-shadow:0 15px #342c29,3px 4px #b79b6b}
+.guide-art-village{background:linear-gradient(#93aaa1 0%,#b2a97b 43%,#5e6f4a 44%,#304434 100%)}
+.guide-art-village:before{content:'⌂  ♜  ⌂';font-size:145px;letter-spacing:4px;bottom:10%;color:#604c36;text-shadow:5px 7px #2b271e}
+.guide-art-camp{background:linear-gradient(#303c48,#3a4850 54%,#24382e 55%,#192a22)}
+.guide-art-camp:before{content:'▲  ♜  ▲';color:#836a48;text-shadow:4px 12px #131a1d;font-size:110px;bottom:8%}
+.guide-book p{font-size:16px;line-height:1.65;color:#423929;margin-top:16px}
+.guide-book ul{padding-left:20px;margin:14px 0;display:grid;gap:14px;font-size:15px;line-height:1.45;flex:1}
+.guide-book li::marker{color:#97703e}
+.guide-controls{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:18px}
+.guide-controls button,.village-board button{background:linear-gradient(#71543d,#473524);color:#f2e4bd;border:1px solid #ab8953;padding:11px 14px;border-radius:4px;font:700 12px system-ui;letter-spacing:.08em;cursor:pointer}
+.guide-controls button:disabled,.village-board button:disabled{opacity:.35;cursor:not-allowed}
+.guide-controls span{font:12px system-ui;margin:auto;color:#625335}
+.village-board{background:linear-gradient(130deg,#222923,#151b18);border:1px solid #bc9a63;box-shadow:0 20px 80px #000c;padding:30px;max-width:760px;width:95vw;color:#ddd7c4;font-family:system-ui;border-radius:8px}
+.village-board h2{font:700 30px Georgia;margin:3px 0 10px;color:#efdfb7}.village-board .eyebrow{letter-spacing:.24em;color:#c1a777;font:11px system-ui}.village-board p{line-height:1.6;color:#c6c7b8}
+.village-board-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}
+.village-board-actions>div{background:#2e372e;padding:18px;border:1px solid #4a5c49;display:grid;gap:11px}
+.village-board-actions strong{color:#f0dab0;font:22px Georgia}.village-board-actions small{color:#a4b5a1;line-height:1.5}
+.village-quest-hud{position:fixed;top:150px;left:50%;transform:translateX(-50%);z-index:110;background:linear-gradient(90deg,#131c18dd,#2d2920e5,#131c18dd);border:1px solid #a9915b75;min-width:245px;max-width:450px;text-align:center;display:grid;grid-template-columns:26px auto;gap:0 8px;padding:9px 15px;border-radius:6px;box-shadow:0 2px 18px #0008;pointer-events:none}
+.village-quest-hud b{color:#dcc187;font:700 12px system-ui;letter-spacing:.08em}.village-quest-hud small{grid-column:2;color:#aab7a5;font:11px system-ui;text-align:left}
+.village-quest-hud .village-arrow{font-size:19px;color:#e6ce88;grid-row:1/3;display:block;transform-origin:center}
+@media(max-width:680px){.guide-book{min-height:0;display:flex;flex-direction:column;max-height:90vh;overflow:auto}.guide-book:after{display:none}.guide-leaf{padding:18px}.guide-art{height:120px;margin:8px}.guide-right{min-height:310px}.village-board-actions{grid-template-columns:1fr}.village-quest-hud{top:112px}}
+
+/* Four hand-authored SVG illustrations, not font-dependent glyph placeholders. */
+.guide-art-forest{background-image:url("assets/illustrations/guide-forest.svg");background-size:cover;background-position:center}
+.guide-art-forest::before,.guide-art-forest::after{content:none}
+.guide-art-walls{background-image:url("assets/illustrations/guide-walls.svg");background-size:cover;background-position:center}
+.guide-art-walls::before,.guide-art-walls::after{content:none}
+.guide-art-village{background-image:url("assets/illustrations/guide-village.svg");background-size:cover;background-position:center}
+.guide-art-village::before,.guide-art-village::after{content:none}
+.guide-art-camp{background-image:url("assets/illustrations/guide-camp.svg");background-size:cover;background-position:center}
+.guide-art-camp::before,.guide-art-camp::after{content:none}
+
+/* V27: readable seven-folio manuscript, gold-leaf route instrument, master-miller forge. */
+.guide-book{width:min(1100px,97vw);min-height:550px;border:10px double #6a4c2c;border-radius:16px 30px 30px 16px;box-shadow:0 28px 110px #000d,0 0 0 2px #ba9455,inset 0 0 0 3px #473324}
+.guide-book::before{content:'✥';font:35px Georgia;color:#ac8a56;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:2;text-shadow:0 3px 9px #281b10}
+.guide-leaf{padding:36px 42px;background:radial-gradient(ellipse at 15% 10%,#f0e4bf 0,#dfca9a 58%,#b79c6e 100%)}
+.guide-right{background:radial-gradient(ellipse at 80% 15%,#f1e2b9 0%,#d8bf8e 68%,#b19868 100%)}
+.guide-book h2{font-size:clamp(28px,3vw,43px);letter-spacing:.045em;border-bottom:1px solid #92764d;padding-bottom:12px}
+.guide-book p{font-size:17px;line-height:1.72;margin:16px 0;color:#403325}
+.guide-book li{font-size:15px;line-height:1.55;color:#433729}
+.guide-book li::marker{content:'✦  ';font-size:13px}
+.guide-art{height:285px;border-radius:45% 45% 2px 2px;border:7px double #81633f;background-size:cover!important;background-position:center!important;box-shadow:inset 0 0 30px #30231788,0 9px 16px #38281966}
+.guide-art-mill{background-image:url('assets/illustrations/guide-mill.svg')}
+.guide-art-map{background-image:url('assets/illustrations/guide-map.svg')}
+.guide-art-craft{background-image:url('assets/illustrations/guide-craft.svg')}
+.guide-art-mill::before,.guide-art-mill::after,.guide-art-map::before,.guide-art-map::after,.guide-art-craft::before,.guide-art-craft::after{content:none}
+.guide-controls{margin-top:auto;padding-top:16px;border-top:1px solid #b39970}
+.guide-controls button,.village-board button{transition:filter .15s,border-color .15s}
+.guide-controls button:not(:disabled):hover,.village-board button:not(:disabled):hover{filter:brightness(1.2);border-color:#d9bc78}
+.village-quest-hud{top:111px;left:50%;width:min(425px,calc(100vw - 24px));max-width:unset;min-width:0;display:flex;flex-direction:column;gap:5px;padding:11px 16px 12px;text-align:left;background:linear-gradient(130deg,#111a17f5,#26291ff3);border:1px solid #c4a568bb;border-radius:13px;box-shadow:0 12px 35px #000c,0 0 20px #d1aa5930,inset 0 0 0 1px #fff1b817}
+.village-quest-top{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;border-bottom:1px solid #aa94604b;padding-bottom:6px;color:#a9bbad;font:700 10px/1.5 system-ui;letter-spacing:.12em}
+.village-quest-top>span:last-child{font-size:10px;color:#e8ce8f;text-align:right;letter-spacing:.03em}
+.village-compass-glyph{color:#d4b475;font-size:17px}
+.village-quest-main{display:flex;align-items:center;gap:15px;width:100%}
+.village-quest-hud .village-arrow{width:46px;height:46px;flex:0 0 46px;display:grid;place-items:center;border:2px solid #c1a06a8a;border-radius:50%;font:700 31px Georgia;color:#ffe4a3;background:radial-gradient(#564325,#272620);text-shadow:0 0 11px #e4b15f;transform-origin:center;transition:transform .10s linear;line-height:1}
+.village-quest-main #villageQuestText{font:800 18px/1.25 system-ui;letter-spacing:.04em;color:#fff0bd}
+.village-quest-hud #villageQuestDistance{padding-left:61px;color:#c8caad;font:700 11px/1.5 monospace;letter-spacing:.035em}
+.village-quest-hud #villageQuestHint{padding-left:61px;color:#90ad9b;font:10px/1.4 system-ui;letter-spacing:.055em}
+.village-upgrade-button{display:block;width:100%;margin-bottom:9px!important;background:linear-gradient(90deg,#53442b,#826c44)!important}
+.village-board{max-height:88vh;overflow-y:auto;border:3px double #ab8f56;background:radial-gradient(circle at 20% 10%,#343830,#121915);box-shadow:0 25px 100px #000c, inset 0 0 30px #0007}
+.village-board-actions>div{border:1px solid #88775388;background:linear-gradient(140deg,#333c32,#242a24)}
+@media(max-width:680px){.guide-book{max-height:92vh}.guide-leaf{padding:20px}.guide-book h2{margin-top:8px}.guide-art{height:170px;margin:5px 0}.guide-right{min-height:unset}.guide-book p{font-size:14px}.guide-book ul{gap:7px}.guide-book li{font-size:13px}.village-quest-hud{top:88px;padding:8px 10px}.village-quest-main #villageQuestText{font-size:14px}.village-quest-hud #villageQuestHint{font-size:9px}.village-board-actions{grid-template-columns:1fr}}
+
+/* V28: compact navigation sits directly beneath the minimap (right HUD rail). */
+.village-quest-hud{
+ position:fixed;left:auto;right:85px;top:264px;transform:none;
+ width:174px;min-width:0;max-width:174px;padding:6px 8px 7px;
+ border-radius:8px;background:linear-gradient(145deg,#101b18e8,#25291ee3);
+ gap:1px;border:1px solid #ac945d75;box-shadow:0 4px 18px #0008;
+ pointer-events:none;z-index:110;
+}
+.village-quest-top{padding:0;border:0;gap:4px;font:700 8px/1.15 system-ui;letter-spacing:.09em;color:#aabea5;justify-content:flex-start}
+.village-compass-glyph{font-size:10px}
+.village-quest-main{gap:7px}
+.village-quest-hud .village-arrow{width:31px;height:31px;flex:0 0 31px;font:700 20px/1 Georgia;border-width:1px;border-radius:50%;background:#3b3426;text-shadow:none;transition:transform .055s linear}
+.village-quest-main #villageQuestText{font:700 11px/1.2 system-ui;letter-spacing:.03em}
+.village-quest-hud #villageQuestDistance{padding-left:38px;font:700 9px/1.25 monospace;color:#c3bea9}
+.village-quest-hud #villageQuestHint{display:none}
+@media(max-width:820px){.village-quest-hud{right:64px;top:223px;transform:scale(.78);transform-origin:top right}}
+
+/* V31: compact medieval building catalogue, visible growth / management panels. */
+.village-expansion{margin:15px 0;padding:13px;border:1px solid rgba(193,160,94,.45);background:linear-gradient(135deg,rgba(37,28,17,.82),rgba(21,23,16,.86));box-shadow:inset 0 1px 0 rgba(230,212,156,.08)}
+.village-expansion h3{font:700 15px Georgia,serif;letter-spacing:2px;color:#e2c689;margin:0 0 12px;text-transform:uppercase}
+.village-expansion-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px}
+.village-expansion-card{display:flex;flex-direction:column;justify-content:space-between;gap:10px;min-width:0;padding:13px;border:1px solid #53462c;background:linear-gradient(140deg,#20261e,#161914)}
+.village-expansion-card strong{display:block;font:700 14px Georgia,serif;color:#f1d69e}
+.village-expansion-card small{display:block;font:11px/1.55 system-ui;color:#b6b9a5;margin-top:4px}
+.village-expansion-card button{width:100%;background:#353923;color:#f4e1b3;border:1px solid #af925d;border-radius:3px;padding:9px;font:700 11px system-ui;cursor:pointer}
+.village-expansion-card button:disabled{opacity:.40;cursor:not-allowed}
+#villageForgeOrders{margin-top:10px}
+#villageForgeStatus{font:11px system-ui;color:#c2b9a3}
+#villageChiefPrompt{position:fixed;z-index:45;pointer-events:none;transform:translate(-50%,-110%);padding:7px 11px;background:rgba(27,22,14,.91);border:1px solid #e1b46b;color:#ffe6b4;border-radius:7px;font:700 12px Georgia,serif;white-space:nowrap;box-shadow:0 5px 17px rgba(0,0,0,.6);text-shadow:0 1px 1px #000}
+#villageChiefPrompt.hidden{display:none}
+
+.village-building-mini{align-self:center;max-width:106px;width:100%;height:78px;image-rendering:pixelated;filter:drop-shadow(0 7px 5px #0009)}
+.village-expansion-card{align-items:stretch}
+.village-expansion-card>.village-building-mini{margin:0 auto 5px}
+
+.village-building-mini{width:140px;height:100px;object-fit:contain;border:1px solid #685f43;image-rendering:pixelated}
+.village-costs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.village-cost{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border:1px solid #746b46;background:#242718;font-size:12px;color:#dce3b9}.village-cost.missing{color:#eab092;border-color:#855746}.village-cost canvas{width:24px;height:24px;image-rendering:pixelated}.village-board-actions>div{display:flex;flex-direction:column;align-items:flex-start;gap:7px}.village-expansion-card small{line-height:1.5}

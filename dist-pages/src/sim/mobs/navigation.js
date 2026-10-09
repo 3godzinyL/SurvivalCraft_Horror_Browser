@@ -411,7 +411,8 @@ S.updateEnemies = function updateEnemies(dt, nightFactor) {
         }
         const reach = e.type === 'bear' ? 1.8 : e.type === 'watcher' ? 1.65 : 1.45, canWolfAttack = e.type !== 'wolf' || e.spotted;
         const leapHit=e.pounceBurst>0 && !e.pounceHit;
-        if (!def.passive && active && canWolfAttack && dist < reach+(leapHit?.52:0) && vertical < 2.2 && e.attack <= 0 && e.pounceWindup===0) {
+        const canHitPlayer=e.type==='wolf' ? S.wolfLineOfSight(e) : !S.voxelRaycast([e.pos[0],e.pos[1]+.76,e.pos[2]], S.norm3([S.player.pos[0]-e.pos[0],S.player.pos[1]+.85-e.pos[1],S.player.pos[2]-e.pos[2]]), Math.max(0,dist-.45));
+        if (!def.passive && active && canWolfAttack && canHitPlayer && dist < reach+(leapHit?.52:0) && vertical < 2.2 && e.attack <= 0 && e.pounceWindup===0) {
             e.attack = e.type === 'crawler' ? .78 : e.type === 'wraith' ? .72 : e.type === 'bear' ? 1.35 : e.type === 'wolf' ? .96 : 1.0;
             if(leapHit){
                 e.pounceHit=true;

@@ -44,6 +44,7 @@ export function install(S) {
     if(!m||typeof m!=='object')return;
     if(m.t==='error'){say(m.message||'Błąd serwera.',true);if(!me.connected){clear(m.message||'Nie udało się połączyć.');}return;}
     if(m.t==='welcome'){
+      me.worldgenVersion=[22,26].includes(m.worldgenVersion)?m.worldgenVersion:22;
       me.id=m.id;me.room=m.code;me.host=!Array.isArray(m.players)||m.players.length===0;me.clock=Number(m.clock)||800;me.edits=[];
       for(const player of m.players||[])me.remote.set(player.id,{...player,received:performance.now(),displayPos:player.pos});
       if(S.hashString(m.seedText)!==(m.seed>>>0)){clear('Błędny seed otrzymany z serwera.');return;}
@@ -55,7 +56,8 @@ export function install(S) {
       // Ready is an asynchronous WebSocket event, so pointer lock requires a further real click.
       // Connecting must be cleared BEFORE startNewGame or the V23 guard prevents world creation.
       me.connecting=false;
-      S.startNewGame();
+      S.worldgenOverride=me.worldgenVersion||22;
+      try{S.startNewGame();}finally{S.worldgenOverride=null;}
       if(!S.running){clear('Nie udało się uruchomić wspólnego świata.');return;}
       for(const edit of me.edits){if(!Array.isArray(edit))continue;const [x,y,z]=String(edit[0]).split(',').map(Number),id=edit[1];if(Number.isInteger(x)&&Number.isInteger(y)&&Number.isInteger(z)&&id>=0&&id<256)applyEdit(x,y,z,id);}
       me.edits=[];S.worldSeconds=me.clock;me.coopSession=true;me.connected=true;me.connecting=false;refresh();
@@ -73,6 +75,10 @@ export function install(S) {
     if(m.t==='state'){
       let p=me.remote.get(m.id);if(!p){p={id:m.id,name:'Gracz',pos:m.pos};me.remote.set(m.id,p);}
       p.pos=m.pos;p.yaw=m.yaw;p.pitch=m.pitch;p.health=m.health;p.received=performance.now();return;
+    }
+    if(m.t==='edit_batch'){
+      for(const v of (Array.isArray(m.edits)?m.edits:[]).slice(0,2500)){if(Array.isArray(v)&&v.length===4&&v.every(Number.isInteger))applyEdit(v[0],v[1],v[2],v[3]);}
+      return;
     }
     if(m.t==='edit'){
       if(Number.isInteger(m.x)&&Number.isInteger(m.y)&&Number.isInteger(m.z)&&Number.isInteger(m.id))applyEdit(m.x,m.y,m.z,m.id);
@@ -92,7 +98,7 @@ export function install(S) {
     me.ws=ws;me.active=true;me.connecting=true;me.joinMode=mode;say('Łączenie z '+url+' ...');
     ws.onopen=()=>{if(mode==='host'){
       const seedText=S.UI.seedInput.value.trim()||String(Date.now());S.UI.seedInput.value=seedText;
-      send({t:'create',seedText,seed:S.hashString(seedText),worldgenVersion:22,difficulty:S.UI.difficultySelect.value,name});
+      send({t:'create',seedText,seed:S.hashString(seedText),worldgenVersion:26,difficulty:S.UI.difficultySelect.value,name});
     }else if(mode==='join')send({t:'join',code:ui.code.value.replace(/\s/g,'').toUpperCase(),name});
     else send({t:'join_public',name});};
     ws.onmessage=ev=>{try{
@@ -142,7 +148,8 @@ export function install(S) {
     if(!hasStoredServer && !ui.url.value && typeof cfg?.server==='string' && /^wss?:\/\//.test(cfg.server))ui.url.value=cfg.server;
   }).catch(()=>{});
   const setBlock=S.setBlock;
-  S.setBlock=function(x,y,z,id,record=true){const changed=setBlock(x,y,z,id,record);if(changed&&record&&me.connected)send({t:'edit',x:Math.floor(x),y:Math.floor(y),z:Math.floor(z),id});return changed;};
+  S.setBlock=function(x,y,z,id,record=true){const changed=setBlock(x,y,z,id,record);if(changed&&record&&me.connected&&!S.villageBatchBuilding)send({t:'edit',x:Math.floor(x),y:Math.floor(y),z:Math.floor(z),id});return changed;};
+  S.netBroadcastVillageBatch=(edits)=>{if(me.connected&&Array.isArray(edits))for(let i=0;i<edits.length;i+=450)send({t:'edit_batch',edits:edits.slice(i,i+450)});};
   const saveGame=S.saveGame;S.saveGame=function(){if(me.active||me.coopSession)return;return saveGame();};
   const quit=S.quitToMenu;S.quitToMenu=function(){
     if(!me.active&&!me.coopSession)return quit();

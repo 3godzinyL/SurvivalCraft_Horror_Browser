@@ -1,3 +1,5 @@
+import {install as installNoise} from '../world/noise.js';
+import {install as installWorldgen} from '../world/worldgen.js';
 /**
  * NightCraft V18.1 - 12-chunk-radius menu panorama.
  * Independent from game saves: LOD terrain meshes stream one sector per frame;
@@ -25,22 +27,28 @@ export function install(S) {
   const riverCenter=z=>Math.sin(z*.039)*17 + Math.sin(z*.112)*2.8-1.4;
   const riverWidth=z=>6.5 + Math.sin(z*.075)*1.6;
   function riverDistance(x,z){return Math.abs(x-riverCenter(z));}
-  function terrainHeight(x,z){
-    const shore=riverDistance(x,z)-riverWidth(z);
-    if(shore<0)return 1;
-    if(shore<3)return 3;
-    const low=2.7*Math.sin(x*.026+z*.009)+2.3*Math.cos(z*.032-x*.013);
-    const hills=4.5*Math.pow(.5+.5*Math.sin(x*.014+z*.018),2);
-    const meadow=Math.sin(x*.035+1.6)*Math.cos(z*.032-1.1);
-    return Math.max(4,Math.min(18,Math.round(7+low+hills+(meadow> .65?1:0))));
+  // Sample the production generator in an isolated preview context.
+  const preview={GAME_DATA:S.GAME_DATA||{ruins:{types:[]}},B:S.B,blockDefs:S.blockDefs,clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),lerp:(a,b,t)=>a+(b-a)*t,smooth:t=>t*t*(3-2*t)};
+  installNoise(preview);installWorldgen(preview);
+  preview.worldSeed=preview.hashString('hollow-pines-317');preview.worldgenVersion=26;
+  let site={x:0,z:0,score:-Infinity};
+  for(let z=-512;z<=512;z+=64)for(let x=-512;x<=512;x+=64){
+    const h=preview.terrainHeight(x,z);
+    const score=-Math.abs(h-preview.SEA-1)+Math.abs(preview.terrainHeight(x+32,z)-h)*.22;
+    if(score>site.score)site={x,z,score};
   }
-  function blockAt(x,z,h){
-    const d=riverDistance(x,z)-riverWidth(z);
-    if(d<0)return S.B.GRAVEL;
-    if(d<4)return S.B.SAND;
-    const birch=Math.sin(x*.05+z*.038);
-    return birch>.43?S.B.FOREST_GRASS:S.B.GRASS;
+  const columns=new Map();
+  function column(x,z){
+    const key=Math.floor(x)+','+Math.floor(z);
+    if(!columns.has(key)){
+      const wx=Math.floor(x)+site.x,wz=Math.floor(z)+site.z;
+      const h=preview.terrainHeight(wx,wz),biome=preview.biomeAt(wx,wz,h);
+      columns.set(key,{h:Math.max(1,h-preview.SEA+3),id:preview.surfaceBlockFor(biome,wx,wz)});
+    }
+    return columns.get(key);
   }
+  const terrainHeight=(x,z)=>column(x,z).h;
+  const blockAt=(x,z,h)=>column(x,z).id;
   // Priority is central first, then outward. The first sector already contains
   // shoreline, water, tree silhouettes and moving grass.
   for(let gz=-REGION_COUNT/2;gz<REGION_COUNT/2;gz++)
@@ -49,7 +57,7 @@ export function install(S) {
   queued.sort((a,b)=>a.rank-b.rank || Math.abs(a.gx)-Math.abs(b.gx) || Math.abs(a.gz)-Math.abs(b.gz));
   S.menuPreviewInfo={chunkRadius:CHUNK_RADIUS, diameterChunks:SIDE,
       totalChunks:SIDE*SIDE, totalSectors:queued.length, builtSectors:0,
-      worldRadiusBlocks:WORLD_RADIUS,generatedBounds:null};
+      worldRadiusBlocks:WORLD_RADIUS,generatedBounds:null,seed:preview.worldSeed,sourceOrigin:[site.x,site.z],productionTerrain:true};
 
   function buildSector({gx,gz}) {
     const originX=gx*SECTOR,originZ=gz*SECTOR;
@@ -85,8 +93,8 @@ export function install(S) {
       // Underground columns are drawn only as a coarse side skirt; none of the
       // expensive underground real-world chunks are allocated for the menu.
       box(opaque,x,-2,z,size,h+2,size,id,0,false);
-      if(h===1)box(water,x,3.03,z,size,.08,size,S.B.WATER,0,true);
-      if(size<=4 && h>=4 && rand(Math.floor(x),Math.floor(z),72)>.77){
+      if(h<3)box(water,x,3.03,z,size,.08,size,S.B.WATER,0,true);
+      if(size<=4 && h>=4 && rand(Math.floor(x),Math.floor(z),72)>.48){
         const dec=rand(x,z,74)>.61?S.B.FERN:S.B.TALLGRASS;
         S.pushDecorMesh(opaque.p,opaque.n,opaque.u,opaque.w,x+size*.30,h,z+size*.30,dec);
       }
@@ -117,7 +125,7 @@ export function install(S) {
         const foliage=pine?S.B.PINELEAVES:S.B.BIRCHLEAVES;
         const tall=(pine?8:6)+Math.floor(rand(tx,tz,33)*5);
         const far=radius>150;
-        box(opaque,tx+.38,h,tz+.38,.25,tall,.25,log);
+        for(let level=0;level<tall;level++)box(opaque,tx,h+level,tz,1,1,1,log,8);
         if(pine){
           const crowns=far?2:4;
           for(let t=0;t<crowns;t++){
@@ -184,12 +192,14 @@ export function install(S) {
     if(queued.length)buildSector(queued.shift());
     gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);
     gl.enable(gl.CULL_FACE);gl.cullFace(gl.BACK);
-    gl.clearColor(.058,.103,.121,1);
+    gl.clearColor(.29,.40,.43,1);
     gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     const now=performance.now();const t=now/1000;
     const a=.46+t*.022;
-    const eye=[Math.cos(a)*142,68+Math.sin(t*.14)*3,Math.sin(a)*142];
-    const target=[0,5,0],fog=[.13,.19,.18];
+    const eye=[Math.cos(a)*110,49+Math.sin(t*.14)*2,Math.sin(a)*110];
+    const target=[0,7,0],fog=[.29,.37,.33];
+    S.activeChunkLamps=null;
+    S.drawSkyGradient?.([.46,.64,.76],1,.45,'clear');
     const proj=S.M4.perspective(Math.PI/3.0,S.canvas.width/S.canvas.height,.10,445);
     const VP=S.M4.multiply(proj,S.M4.lookAt(eye,target));
     gl.disable(gl.BLEND);

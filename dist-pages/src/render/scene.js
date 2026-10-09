@@ -1,12 +1,14 @@
+import {MAX_LIGHTS,TORCH_RADIUS,TORCH_POWER,lightFalloff,skyAt,selectChunkLights} from "./lighting.js";
+import {zoomFov} from "./graphics-config.js";
 // NightCraft V15 · native ES module (render/scene.js); installs into the explicit shared state.
 export function install(S) {
-S.resize = function resize() { const dpr = Math.min(1.5, window.devicePixelRatio || 1), w = Math.floor(innerWidth * dpr), h = Math.floor(innerHeight * dpr); if (S.canvas.width !== w || S.canvas.height !== h) {
+S.resize = function resize() { const dpr = Math.min(2, (window.devicePixelRatio || 1) * (S.dynamicPixelRatio || 1)), w = Math.floor(innerWidth * dpr), h = Math.floor(innerHeight * dpr); if (S.canvas.width !== w || S.canvas.height !== h) {
     S.canvas.width = w;
     S.canvas.height = h;
     S.gl.viewport(0, 0, w, h);
 } };
 
-S.drawVoxelMesh = function drawVoxelMesh(m, alpha, VP, cam, fogColor, fogNear, fogFar, day, torchPos, torchPower, waterMode = 0) {
+S.drawVoxelMesh = function drawVoxelMesh(m, alpha, VP, cam, fogColor, fogNear, fogFar, day, torchPos, torchPower, waterMode = 0, floraMode = 0) {
     if (!m)
         return;
     S.gl.useProgram(S.voxelProgram);
@@ -18,13 +20,28 @@ S.drawVoxelMesh = function drawVoxelMesh(m, alpha, VP, cam, fogColor, fogNear, f
     S.gl.uniform1f(S.VL.day, day);
     S.gl.uniform3fv(S.VL.torch, torchPos);
     S.gl.uniform1f(S.VL.torchPower, torchPower);
+    if(S.VL.lightPos!=null){
+       const lamps=S.activeChunkLamps||{xyz:new Float32Array(MAX_LIGHTS*3),power:new Float32Array(MAX_LIGHTS)};
+       S.gl.uniform3fv(S.VL.lightPos,lamps.xyz);
+       S.gl.uniform1fv(S.VL.lightStrength,lamps.power);
+    }
+    S.gl.uniform1f(S.VL.clipHeight,S.reflectionPass?S.SEA+1.02:0);
+    S.gl.uniform1f(S.VL.waterQuality,S.graphics?.water??2);
+    S.gl.uniform1f(S.VL.reflectionEnabled,S.running&&!S.reflectionPass&&S.graphics?.water===2&&S.waterReflection?.ready?1:0);
+    S.gl.uniformMatrix4fv(S.VL.reflectionVP,false,S.waterReflection?.VP||S.M4.identity());
+    S.gl.activeTexture(S.gl.TEXTURE2);S.gl.bindTexture(S.gl.TEXTURE_2D,S.reflectionPass?S.waterReflection?.fallback:S.waterReflection?.tex||null);S.gl.uniform1i(S.VL.reflectionTex,2);
+    S.gl.activeTexture(S.gl.TEXTURE3);S.gl.bindTexture(S.gl.TEXTURE_2D,S.atlas.sharpTex||S.atlas.tex);S.gl.uniform1i(S.VL.sharpTex,3);
+    S.gl.activeTexture(S.gl.TEXTURE0);
     S.gl.uniform1f(S.VL.alpha, alpha);
-    S.gl.uniform1f(S.VL.time, performance.now() / 1000);
+    S.gl.uniform1f(S.VL.time, (performance.now() / 1000) % 600);
     S.gl.uniform1f(S.VL.water, waterMode);
+    S.gl.uniform1f(S.VL.floraFar,S.graphics?.vegetation||80);
+    S.gl.uniform1f(S.VL.wet,S.running&&S.weatherMode==='rain'?S.weatherIntensity||.8:0);
+    S.gl.uniform1f(S.VL.flora, floraMode);
     const shadow=S.sunShadow;
     S.gl.uniform2fv(S.VL.shadowOrigin, shadow?.origin || [0,0]);
     S.gl.uniform1f(S.VL.shadowSpan, shadow?.span || 256);
-    S.gl.uniform1f(S.VL.shadowAmount, shadow?.valid && S.running && !waterMode ? 1 : 0);
+    S.gl.uniform1f(S.VL.shadowAmount, S.running && !waterMode ? (S.shadowBlend||0) : 0);
     S.gl.activeTexture(S.gl.TEXTURE1);
     S.gl.bindTexture(S.gl.TEXTURE_2D,shadow?.tex || null);
     S.gl.uniform1i(S.VL.shadowHeight,1);
@@ -44,14 +61,42 @@ S.drawVoxelMesh = function drawVoxelMesh(m, alpha, VP, cam, fogColor, fogNear, f
         if(m.wind){S.gl.bindBuffer(S.gl.ARRAY_BUFFER,m.wind);S.gl.enableVertexAttribArray(S.VL.wind);S.gl.vertexAttribPointer(S.VL.wind,1,S.gl.UNSIGNED_BYTE,true,0,0);}
         else {S.gl.disableVertexAttribArray(S.VL.wind);S.gl.vertexAttrib1f(S.VL.wind,0);}
     }
+    if(S.VL.tint>=0){
+        if(m.tint){S.gl.bindBuffer(S.gl.ARRAY_BUFFER,m.tint);S.gl.enableVertexAttribArray(S.VL.tint);S.gl.vertexAttribPointer(S.VL.tint,3,S.gl.UNSIGNED_BYTE,true,0,0);}
+        else {S.gl.disableVertexAttribArray(S.VL.tint);S.gl.vertexAttrib3f(S.VL.tint,1,1,1);}
+    }
+    if(S.VL.sky>=0){
+      if(m.sky){S.gl.bindBuffer(S.gl.ARRAY_BUFFER,m.sky);S.gl.enableVertexAttribArray(S.VL.sky);S.gl.vertexAttribPointer(S.VL.sky,1,S.gl.UNSIGNED_BYTE,true,0,0);}
+      else{S.gl.disableVertexAttribArray(S.VL.sky);S.gl.vertexAttrib1f(S.VL.sky,1);}
+    }
+    if(S.VL.depth>=0){if(m.depth){S.gl.bindBuffer(S.gl.ARRAY_BUFFER,m.depth);S.gl.enableVertexAttribArray(S.VL.depth);S.gl.vertexAttribPointer(S.VL.depth,1,S.gl.UNSIGNED_BYTE,true,0,0);}else{S.gl.disableVertexAttribArray(S.VL.depth);S.gl.vertexAttrib1f(S.VL.depth,.3);}}
     S.gl.drawArrays(S.gl.TRIANGLES, 0, m.count);
 };
 
+S.colorLightAt = function colorLightAt(pos) {
+    const day=S.frameDay??S.sunLevel(), exposure=skyAt(S,pos);
+    let light=.012+day*(.12+.62*exposure);
+    let local=0;
+    for(const a of S.nearBoxLamps||[])local+=lightFalloff(S.dist3(pos,a),a[3]);
+    if(S.hasHeldTorch?.())local+=lightFalloff(S.dist3(pos,S.frameTorchPos||S.frameCamera||S.cameraEyePos()),TORCH_POWER);
+    light+=.72*Math.min(1.25,local);
+    return S.clamp(light,.012,1.2);
+};
 S.drawBox = function drawBox(VP, pos, scale, color, ry, fogColor, cam, rx = 0, rz = 0) {
+    // Sphere-enclosing AABB is conservative for arbitrary rotations of this
+    // cuboid, and avoids CPU/GPU work on unseen entity body parts and clouds.
+    if(S.running && S.framePlanes){
+        const r=.5*Math.hypot(scale[0],scale[1],scale[2]);
+        if(!S.aabbInFrustum(S.framePlanes,pos[0]-r,pos[1]-r,pos[2]-r,pos[0]+r,pos[1]+r,pos[2]+r)){
+            S.frameBoxCull=(S.frameBoxCull||0)+1;return;
+        }
+    }
+    S.frameBoxDraw=(S.frameBoxDraw||0)+1;
     const model = S.modelMatrix(pos, scale, ry || 0, rx || 0, rz || 0), mvp = S.M4.multiply(VP, model), fog = S.clamp((S.dist3(pos, cam) - 14) / (S.renderDistance * S.CHUNK - 10), 0, 1);
     S.gl.useProgram(S.colorProgram);
     S.gl.uniformMatrix4fv(S.CL.mvp, false, mvp);
-    S.gl.uniform4fv(S.CL.color, color);
+    const brightness=S.running?S.colorLightAt(pos):1;
+    S.gl.uniform4fv(S.CL.color, [color[0]*brightness,color[1]*brightness,color[2]*brightness,color[3]]);
     S.gl.uniform1f(S.CL.fog, fog);
     S.gl.uniform3fv(S.CL.fogColor, fogColor);
     S.gl.bindBuffer(S.gl.ARRAY_BUFFER, S.cubeBuffer);
@@ -371,7 +416,7 @@ S.renderTargetOutline = function renderTargetOutline(VP, fogColor, cam) {
         const visual = S.clamp(damage, 0, 1);
         S.gl.bindBuffer(S.gl.ARRAY_BUFFER, S.crackBuffer);
         S.gl.vertexAttribPointer(S.CL.pos, 3, S.gl.FLOAT, false, 0, 0);
-        S.gl.uniform4fv(S.CL.color, new Float32Array([.052, .039, .030, .55 + .14 * visual]));
+        S.gl.uniform4fv(S.CL.color, new Float32Array([.032, .025, .018, .78 + .16 * visual]));
         const count = Math.ceil(visual * S.crackStages) * S.crackVertsPerStage;
         S.gl.drawArrays(S.gl.TRIANGLES, 0, count);
     }
@@ -390,7 +435,7 @@ S.renderBlockDamage=function renderBlockDamage(VP,fogColor,cam){
         S.gl.uniformMatrix4fv(S.CL.mvp,false,S.M4.multiply(VP,model));
         S.gl.uniform1f(S.CL.fog,0);
         S.gl.uniform3fv(S.CL.fogColor,fogColor);
-        S.gl.uniform4fv(S.CL.color,new Float32Array(hit?[.11,.062,.041,.73]:[.052,.039,.030,.57]));
+        S.gl.uniform4fv(S.CL.color,new Float32Array(hit?[.09,.048,.028,.90]:[.032,.025,.018,.82]));
         S.gl.bindBuffer(S.gl.ARRAY_BUFFER,S.crackBuffer);
         S.gl.enableVertexAttribArray(S.CL.pos);
         S.gl.vertexAttribPointer(S.CL.pos,3,S.gl.FLOAT,false,0,0);
@@ -497,11 +542,15 @@ S.updateCampfires=function updateCampfires(dt){
 };
 S.renderPlacedTorches = function renderPlacedTorches(VP,fogColor,cam) {
     let n=0;
-    for(const [key,id] of S.edits){
-        if(id!==S.B.TORCH)continue;
-        const [x,y,z]=key.split(',').map(Number);
+    for(const chunk of S.chunks.values()){
+      if(Math.hypot((chunk.cx+.5)*S.CHUNK-S.player.pos[0],(chunk.cz+.5)*S.CHUNK-S.player.pos[2])>72)continue;
+      for(const [x,y,z] of chunk.torches||[]){
         if(Math.hypot(x+.5-S.player.pos[0],z+.5-S.player.pos[2])>Math.min(55,S.renderDistance*S.CHUNK))continue;
-        const normal=S.torchMounts?.get(key)||[0,1,0];
+        // Each torch is cached as coordinates. In V28 the old `key` local was
+        // removed during the chunk-cache conversion, but still referenced here.
+        // That ReferenceError terminated requestAnimationFrame on first spawn.
+        const torchKey=S.editKey(x,y,z);
+        const normal=S.torchMounts?.get(torchKey)||[0,1,0];
         const side=normal[1]===0;
         const nx=normal[0]||0,nz=normal[2]||0;
         const foot=[x+.5-nx*.36,y+(side?.29:.18),z+.5-nz*.36];
@@ -510,12 +559,13 @@ S.renderPlacedTorches = function renderPlacedTorches(VP,fogColor,cam) {
         // Align the real shaft rotation with the wall normal: the stick must
         // lean AWAY from the supporting wall, toward its own flame/head.
         const angle=.40,rx=nz*angle,rz=-nx*angle;
-        const flick=.85+.15*Math.sin(performance.now()*.017+x*2.1+z);
+        const flick=.97+.03*Math.sin(performance.now()*.0035+x*2.1+z);
         // Lower base physically contacts the supporting face; shaft follows a lean.
         S.drawBox(VP,mid,[.067,side?.59:.55,.067],[.30,.20,.11,1],0,fogColor,cam,rx,rz);
         S.drawBox(VP,head,[.088,.12,.088],[.74*flick,.30,.075,1],0,fogColor,cam);
         S.drawBox(VP,[head[0],head[1]+.09,head[2]],[.055,.13,.055],[1,.69*flick,.19,.92],0,fogColor,cam);
-        if(++n>110)break;
+        if(++n>110)return;
+      }
     }
 };
 
@@ -562,58 +612,110 @@ S.renderDroppedItems = function renderDroppedItems(VP, fogColor, cam) {
     }
 };
 
+S.worldLampTimer=0;
+S.worldLamps=[];
+S.rebuildWorldLamps=function(){
+    // Read torches from loaded chunks, including worker-generated village lamps.
+    const unique=new Map(),range=S.renderDistance*S.CHUNK+TORCH_RADIUS;
+    for(const chunk of S.chunks.values()){
+        if(Math.hypot((chunk.cx+.5)*S.CHUNK-S.player.pos[0],(chunk.cz+.5)*S.CHUNK-S.player.pos[2])>range+24)continue;
+        for(const [x,y,z] of chunk.torches||[])unique.set(`${x},${y},${z}`,[x+.5,y+.6,z+.5,TORCH_POWER]);
+    }
+    for(const [key,id] of S.edits)if(id===S.B.TORCH||id===S.B.CAMPFIRE){
+        const [x,y,z]=key.split(',').map(Number);
+        if(Math.hypot(x-S.player.pos[0],z-S.player.pos[2])<=range)unique.set(key,[x+.5,y+.6,z+.5,id===S.B.CAMPFIRE?1.15:TORCH_POWER]);
+    }
+    const signature=[...unique.values()].map(p=>p.join(",")).join(";");
+    if(signature!==S.lampSignature){S.lampSignature=signature;S.worldLamps=[...unique.values()];S.lampChunkCache=new Map();}
+};
+S.chunkLampUniforms=function(cx,cz){
+    const key=`${cx},${cz}`;if(S.lampChunkCache?.has(key))return S.lampChunkCache.get(key);
+    const nearest=selectChunkLights(S.worldLamps,cx,cz,S.CHUNK,S.frameCamera||S.player.pos);
+    const xyz=new Float32Array(MAX_LIGHTS*3),power=new Float32Array(MAX_LIGHTS);
+    nearest.forEach((p,i)=>{xyz.set(p.slice(0,3),i*3);power[i]=p[3];});
+    const result={xyz,power};S.lampChunkCache?.set(key,result);return result;
+};
 S.torchCacheTimer = 0;
 S.cachedTorch = null;
 
-S.nearestPlacedTorch = function nearestPlacedTorch() { let best = null, bd = 999; for (const [k, v] of S.edits) {
-    if (v !== S.B.TORCH && v !== S.B.CAMPFIRE)
-        continue;
-    const [x, y, z] = k.split(',').map(Number), d = Math.hypot(x + .5 - S.player.pos[0], y + .5 - (S.player.pos[1] + 1), z + .5 - S.player.pos[2]);
-    if (d < bd && d < Math.min(14, S.renderDistance * S.CHUNK)) {
-        bd = d;
-        best = [x + .5, y + .6, z + .5];
+S.nearestPlacedTorch = function nearestPlacedTorch() {
+    let best=null,bd=28;
+    for(const c of S.chunks.values()){
+        if(Math.hypot((c.cx+.5)*S.CHUNK-S.player.pos[0],(c.cz+.5)*S.CHUNK-S.player.pos[2])>52)continue;
+        for(const [x,y,z] of c.torches||[]){
+            const d=Math.hypot(x+.5-S.player.pos[0],y+.5-(S.player.pos[1]+1),z+.5-S.player.pos[2]);
+            if(d<bd){bd=d;best=[x+.5,y+.6,z+.5,d];}
+        }
     }
-} return best; };
+    // Campfires are not voxels with a TORCH id; their player edits are separate.
+    for(const [key,id] of S.edits)if(id===S.B.CAMPFIRE){
+        const [x,y,z]=key.split(',').map(Number),d=Math.hypot(x+.5-S.player.pos[0],y+.5-(S.player.pos[1]+1),z+.5-S.player.pos[2]);
+        if(d<bd){bd=d;best=[x+.5,y+.5,z+.5,d];}
+    }
+    return best;
+};
 
 S.renderCloudLayer = function renderCloudLayer(VP, fogColor, cam, day) {
-    const drift = S.worldSeconds * .34, cell = 28, baseX = Math.floor((S.player.pos[0] + drift) / cell), baseZ = Math.floor(S.player.pos[2] / cell), night = 1 - day;
-    for (let dz = -3; dz <= 3; dz++)
-        for (let dx = -3; dx <= 3; dx++) {
+    S.gl.enable(S.gl.BLEND);S.gl.blendFunc(S.gl.SRC_ALPHA,S.gl.ONE_MINUS_SRC_ALPHA);S.gl.depthMask(false);
+    const drift = S.worldSeconds * .18, cell = 24, baseX = Math.floor((S.player.pos[0] + drift) / cell), baseZ = Math.floor(S.player.pos[2] / cell), night = 1 - day;
+    for (let dz = -4; dz <= 4; dz++)
+        for (let dx = -4; dx <= 4; dx++) {
             const gx = baseX + dx, gz = baseZ + dz, r = S.hash2i(gx, gz, S.worldSeed ^ 0xc10d);
-            if (r < .61)
+            if (r < .44)
                 continue;
-            const cx = gx * cell - drift + (S.hash2i(gx, gz, 0x811) - .5) * 12, cz = gz * cell + (S.hash2i(gx, gz, 0x912) - .5) * 12, cy = 76 + S.hash2i(gx, gz, 0xa13) * 8;
-            const shade = .72 - day * .05 - night * .36, alpha = .84;
-            const col = [shade * .92, shade * .98, shade, alpha], w = 6 + S.hash2i(gx, gz, 0x414) * 7, d = 3.2 + S.hash2i(gx, gz, 0x515) * 5;
+            const cx = gx * cell - drift + (S.hash2i(gx, gz, 0x811) - .5) * 8, cz = gz * cell + (S.hash2i(gx, gz, 0x912) - .5) * 8, cy = 78 + S.hash2i(gx, gz, 0xa13) * 9;
+            const shade = .82 - day * .02 - night * .28, alpha = .66;
+            const col = [shade * .96, shade * .99, shade, alpha], w = 10 + S.hash2i(gx, gz, 0x414) * 10, d = 4.4 + S.hash2i(gx, gz, 0x515) * 7;
             S.drawBox(VP, [cx, cy, cz], [w, .65, d], col, 0, fogColor, cam);
             if (r > .81)
                 S.drawBox(VP, [cx + w * .42, cy + .38, cz - d * .08], [w * .58, .82, d * .72], [col[0] * .96, col[1] * .98, col[2], alpha], 0, fogColor, cam);
             if (r > .91)
                 S.drawBox(VP, [cx - w * .38, cy + .24, cz + d * .18], [w * .44, .58, d * .55], [col[0] * .93, col[1] * .96, col[2] * .98, alpha], 0, fogColor, cam);
         }
+    S.gl.depthMask(true);S.gl.disable(S.gl.BLEND);
 };
 
 S.renderConstructions = function renderConstructions(VP, fogColor, cam) {
     let n = 0;
-    for (const [k, id] of S.edits) {
+    const constructions=new Map();
+    // Procedural village doors live in generated chunks, not S.edits.
+    // Add them explicitly so they render as hinged models in both day and night.
+    for(const [x,y,z] of S.villageDoorPositions?.()||[]){
+        if(Math.hypot(x+.5-S.player.pos[0],z+.5-S.player.pos[2])>S.renderDistance*S.CHUNK+8)continue;
+        if(S.peekLoadedBlock(x,y,z)===S.B.WOOD_DOOR)constructions.set(S.editKey(x,y,z),S.B.WOOD_DOOR);
+    }
+    for(const [key,id] of S.edits)if(id===S.B.WOOD_DOOR||id===S.B.WOOD_STAIRS||id===S.B.WOOD_FENCE)constructions.set(key,id);
+    for (const [k, id] of constructions) {
         if (id !== S.B.WOOD_DOOR && id !== S.B.WOOD_STAIRS && id !== S.B.WOOD_FENCE)
             continue;
         const [x, y, z] = k.split(',').map(Number);
         if (Math.hypot(x + .5 - S.player.pos[0], z + .5 - S.player.pos[2]) > S.renderDistance * S.CHUNK + 6)
             continue;
-        const f = S.ensureFortification(x, y, z, id, true), col = S.constructionColor(f), ry = (f.orientation || 0) + (id === S.B.WOOD_DOOR && f.open ? Math.PI / 2 : 0);
+        if(S.peekLoadedBlock(x,y,z)!==id)continue;
+        // The wooden fence's base model is already in the chunk's UV mesh.
+        // Do not draw an extra untextured model on top (x-ray/z-fighting).
+        if(id===S.B.WOOD_FENCE)continue;
+        const f = S.ensureFortification(x, y, z, id, true);if(!f)continue;
+        const col = S.constructionColor(f), ry = (f.orientation || 0) + (id === S.B.WOOD_DOOR && f.open ? Math.PI / 2 : 0);
         if (id === S.B.WOOD_DOOR) {
-            S.drawBox(VP, [x + .5, y + .93, z + .5], [.82, 1.86, .11], col, ry, fogColor, cam);
-            S.drawBox(VP, S.rotatedOffset([x + .5, y + .93, z + .5], [.31, .03, -.075], ry), [.08, .08, .07], [.66, .52, .24, 1], ry, fogColor, cam);
+            const base=[x+.5,y+.93,z+.5],hinge=S.rotatedOffset(base,[-.39,0,0],f.orientation||0);
+            const origin=S.rotatedOffset(hinge,[.39,0,0],ry);
+            // Actual atlas-backed door planks instead of the flat brown color cube.
+            S.drawHeldTexturedBlock(VP,origin,[.82,1.86,.14],f.tier===5?S.B.IRON_BLOCK:S.B.WOOD_DOOR,ry,0,0,{cam,fogColor});
+            for(const offset of [-.32,-.09,.15,.35])
+                S.drawHeldTexturedBlock(VP,S.rotatedOffset(origin,[offset,0,-.087],ry),[.033,1.71,.039],S.B.DARK_PLANKS,ry,0,0,{cam,fogColor});
+            for(const height of [-.66,.62])
+                S.drawBox(VP,S.rotatedOffset(origin,[0,height,-.1],ry),[.84,.075,.038],[.24,.19,.14,1],ry,fogColor,cam);
+            S.drawBox(VP, S.rotatedOffset(origin, [.31, .03, -.075], ry), [.08, .08, .07], [.66, .52, .24, 1], ry, fogColor, cam);
             if (f.tier >= 1) {
                 const band = f.tier === 5 ? [.58, .61, .59, 1] : f.tier >= 4 ? [.46, .47, .44, 1] : f.tier >= 2 ? [.34, .35, .33, 1] : [.49, .33, .18, 1];
                 for (const oy of [-.48, .16, .53])
-                    S.drawBox(VP, S.rotatedOffset([x + .5, y + .93, z + .5], [0, oy, -.071], ry), [.72, .065, .035], band, ry, fogColor, cam);
+                    S.drawBox(VP, S.rotatedOffset(origin, [0, oy, -.071], ry), [.72, .065, .035], band, ry, fogColor, cam);
             }
         }
         else if (id === S.B.WOOD_STAIRS) {
-            S.drawBox(VP, S.rotatedOffset([x + .5, y + .25, z + .5], [0, 0, .20], ry), [.96, .50, .56], col, ry, fogColor, cam);
-            S.drawBox(VP, S.rotatedOffset([x + .5, y + .65, z + .5], [0, 0, -.22], ry), [.96, .30, .48], col, ry, fogColor, cam);
+            S.drawHeldTexturedBlock(VP,S.rotatedOffset([x + .5, y + .25, z + .5], [0, 0, .20], ry), [.96, .50, .56],S.B.WOOD_STAIRS,ry,0,0,{cam,fogColor});
+            S.drawHeldTexturedBlock(VP,S.rotatedOffset([x + .5, y + .65, z + .5], [0, 0, -.22], ry), [.96, .30, .48],S.B.WOOD_STAIRS,ry,0,0,{cam,fogColor});
             if (f.tier >= 1) {
                 const band = f.tier === 5 ? [.58, .61, .59, 1] : f.tier >= 2 ? [.37, .38, .36, 1] : [.50, .34, .18, 1];
                 S.drawBox(VP, S.rotatedOffset([x + .5, y + .51, z + .5], [0, 0, .18], ry), [.90, .055, .54], band, ry, fogColor, cam);
@@ -700,7 +802,7 @@ S.renderConstructions = function renderConstructions(VP, fogColor, cam) {
         const [x, y, z] = k.split(',').map(Number);
         if (Math.hypot(x + .5 - S.player.pos[0], z + .5 - S.player.pos[2]) > 40)
             continue;
-        const flick = .80 + .20 * Math.sin(performance.now() * .02 + x * 3 + z);
+        const flick = .97 + .03 * Math.sin(performance.now() * .0035 + x * 3 + z);
         S.drawBox(VP, [x + .5, y + .43, z + .992], [.38, .24, .026], [.78 * flick, .27, .045, 1], 0, fogColor, cam);
         S.drawBox(VP, [x + .5, y + .43, z + 1.008], [.20, .11, .018], [1, .58 * flick, .10, .92], 0, fogColor, cam);
         if (++lit > 24)
@@ -744,9 +846,11 @@ S.render = function render() {
         S.renderMainMenuBackdrop?.();
         return;
     }
-    S.updateSunShadows?.(1 / 60);
+    S.processDirty?.(2);
+    if(S.graphics?.shadows!==false)S.updateSunShadows?.(1 / 60);
+    S.shadowBlend=S.lerp(S.shadowBlend||0,S.sunShadow?.valid&&S.graphics?.shadows!==false?1:0,.065);
     const day = S.sunLevel(), night = 1 - day, lf = S.lightning * .62, biome = S.biomeAt(Math.floor(S.player.pos[0]), Math.floor(S.player.pos[2]));
-    let sky = [S.lerp(.005, .22, day) + lf, S.lerp(.008, .29, day) + lf, S.lerp(.010, .33, day) + lf];
+    let sky = [S.lerp(.005, .40, day) + lf, S.lerp(.008, .49, day) + lf, S.lerp(.010, .53, day) + lf];
     if (biome === 'swamp') {
         sky[0] *= .78;
         sky[1] *= .9;
@@ -756,40 +860,86 @@ S.render = function render() {
     // Water color is a CAMERA effect, not a swimming/movement effect.
     // Near the waterline the view returns to normal as soon as eyes emerge.
     const cam = S.cameraEyePos();
+    S.frameCamera=cam;S.frameDay=day;
     const cameraUnderwater = S.getBlock(Math.floor(cam[0]),Math.floor(cam[1]+.075),Math.floor(cam[2]))===S.B.WATER;
     if (cameraUnderwater)
         sky = [.018, .092, .105];
     let fogColor = cameraUnderwater ? [.018, .102, .112] : [sky[0] * .67, sky[1] * .71, sky[2] * .69];
     S.gl.clearColor(sky[0], sky[1], sky[2], 1);
     S.gl.clear(S.gl.COLOR_BUFFER_BIT | S.gl.DEPTH_BUFFER_BIT);
-    const dir = S.lookDir(), target = S.cameraMode === 2 ? [S.player.pos[0], S.player.pos[1]+1.15, S.player.pos[2]] : [cam[0] + dir[0], cam[1] + dir[1], cam[2] + dir[2]], speed = Math.hypot(S.player.vel[0], S.player.vel[2]), fov = Math.PI / 3 + S.clamp((speed - 5) * .014, 0, .07), proj = S.M4.perspective(fov, S.canvas.width / S.canvas.height, .055, S.renderDistance * S.CHUNK + 35), view = S.M4.lookAt(cam, target), VP = S.M4.multiply(proj, view);
+    S.drawSkyGradient?.(sky,day,(S.worldSeconds%S.DAY_SECONDS)/S.DAY_SECONDS,S.weatherMode);
+    const dir = S.lookDir(), target = S.cameraMode === 2 ? [S.player.pos[0], S.player.pos[1]+1.15, S.player.pos[2]] : [cam[0] + dir[0], cam[1] + dir[1], cam[2] + dir[2]], speed = Math.hypot(S.player.vel[0], S.player.vel[2]), fov = zoomFov(Math.PI / 3 + S.clamp((speed - 5) * .014, 0, .07),S.zoomAmount=S.lerp(S.zoomAmount||0,S.input.keys.has("KeyC")&&!S.paused?1:0,.22)), proj = S.M4.perspective(fov, S.canvas.width / S.canvas.height, .055, S.renderDistance * S.CHUNK + 35), view = S.M4.lookAt(cam, target), VP = S.M4.multiply(proj, view);
     S.lastVP = VP;
-    let fogNear = Math.max(7, S.renderDistance * S.CHUNK * (S.weatherMode === 'mist' ? .21 : .34)), fogFar = S.renderDistance * S.CHUNK * (S.weatherMode === 'mist' ? .72 : .95);
+    S.framePlanes=S.extractFrustumPlanes(VP);
+    S.frameBoxCull=0;S.frameBoxDraw=0;
+    let fogNear = Math.max(7, S.renderDistance * S.CHUNK * (S.weatherMode === 'mist' ? .12 : S.weatherMode==='rain' ? .24 : .32)), fogFar = S.renderDistance * S.CHUNK * (S.weatherMode === 'mist' ? .62 : S.weatherMode==='rain' ? .78 : .96);
     if (cameraUnderwater) {
         fogNear = 1.5;
         fogFar = 20;
     }
+    S.worldLampTimer-=1/60;
+    if(S.worldLampTimer<=0){S.rebuildWorldLamps();S.worldLampTimer=.80;}
+    // Lamp sets stay fixed in world space until the loaded sources change.
+    S.nearBoxLamps=S.worldLamps.filter(p=>(p[0]-cam[0])**2+(p[2]-cam[2])**2<24*24);
     S.torchCacheTimer -= 1 / 60;
     if (S.torchCacheTimer <= 0) {
-        S.cachedTorch = S.nearestPlacedTorch();
-        S.torchCacheTimer = .2;
+        const nextTorch = S.nearestPlacedTorch();
+        if (nextTorch) {
+            if (!S.cachedTorch) S.cachedTorch = nextTorch;
+            else {
+                S.cachedTorch = [
+                    S.lerp(S.cachedTorch[0], nextTorch[0], .35),
+                    S.lerp(S.cachedTorch[1], nextTorch[1], .35),
+                    S.lerp(S.cachedTorch[2], nextTorch[2], .35),
+                    nextTorch[3] ?? S.cachedTorch[3] ?? 0
+                ];
+            }
+        } else S.cachedTorch = null;
+        S.torchCacheTimer = .12;
     }
     const heldTorch = S.hasHeldTorch();
-    let torchPos = S.cachedTorch || cam, torchPower = S.cachedTorch ? 1.08 : 0;
+    let torchPos = cam, torchPower = 0;
     if (heldTorch) {
         torchPos = [cam[0] + dir[0] * .35, cam[1] - .18, cam[2] + dir[2] * .35];
-        torchPower = 1.45;
+        torchPower = TORCH_POWER;
     }
+    S.frameTorchPos=torchPos;
+    S.refreshWaterReflection?.({cam,dir,proj,sky,day,fogColor,torchPos,torchPower});
+    // Geometry-only frame throttle: dynamic internal resolution drops at low
+    // measured FPS, increases only after sustained recovery (no flicker).
+    if(S.dynamicPixelRatio==null)S.dynamicPixelRatio=S.graphics?.resolution||1;
+    const fps=S.fps||60, tick=performance.now();
+    if(S.graphics?.adaptive && fps<36 && tick-(S.resolutionChangedAt||0)>5000){S.dynamicPixelRatio=Math.max(.5,S.dynamicPixelRatio-.1);S.resolutionChangedAt=tick;}
+    else if(S.graphics?.adaptive && fps>57 && tick-(S.resolutionChangedAt||0)>12000 && S.dynamicPixelRatio<(S.graphics?.resolution||1)){S.dynamicPixelRatio=Math.min(S.graphics?.resolution||1,S.dynamicPixelRatio+.1);S.resolutionChangedAt=tick;}
     S.gl.disable(S.gl.BLEND);
     S.renderCloudLayer(VP, fogColor, cam, day);
+    const planes=S.framePlanes;
+    const limit=S.renderDistance*S.CHUNK+S.CHUNK*1.1;
     const visibleChunk = c => {
-        const dx=(c.cx+.5)*S.CHUNK-cam[0],dz=(c.cz+.5)*S.CHUNK-cam[2];
-        const d=Math.hypot(dx,dz);
-        if(d<31)return true;
-        return (dx*dir[0]+dz*dir[2])/Math.max(.01,d)>-.30;
+        const x0=c.cx*S.CHUNK,z0=c.cz*S.CHUNK;
+        const dx=Math.max(x0-cam[0],0,cam[0]-(x0+S.CHUNK));
+        const dz=Math.max(z0-cam[2],0,cam[2]-(z0+S.CHUNK));
+        if(dx*dx+dz*dz>limit*limit)return false;
+        return S.aabbInFrustum(planes,x0,c.renderMinY??0,z0,x0+S.CHUNK,c.renderMaxY??S.WORLD_H,z0+S.CHUNK);
     };
-    for (const c of S.chunks.values())if(visibleChunk(c))
+    S.visibleChunks=0;
+    // Braces are critical: without them c escapes its block scope and the entire
+    // frame crashes before the first terrain mesh reaches WebGL.
+    for (const c of S.chunks.values()) {
+        if (!visibleChunk(c)) continue;
+        S.visibleChunks++;
+        S.activeChunkLamps=S.chunkLampUniforms(c.cx,c.cz);
         S.drawVoxelMesh(c.opaque, 1, VP, cam, fogColor, fogNear, fogFar, S.clamp(day + S.lightning, 0, 1), torchPos, torchPower, 0);
+    }
+    // Opaque, alpha-cutout foliage has its own chunk mesh. No transparent sort
+    // is required; depth-writing blades correctly occlude one another.
+    S.gl.disable(S.gl.CULL_FACE);
+    for (const c of S.chunks.values()) {
+        if (!visibleChunk(c) || !c.flora || Math.hypot((c.cx+.5)*S.CHUNK-cam[0],(c.cz+.5)*S.CHUNK-cam[2])>(S.graphics?.vegetation||80)+S.CHUNK) continue;
+        S.activeChunkLamps=S.chunkLampUniforms(c.cx,c.cz);
+        S.drawVoxelMesh(c.flora, 1, VP, cam, fogColor, fogNear, fogFar, S.clamp(day + S.lightning, 0, 1), torchPos, torchPower, 0, 1);
+    }
+    S.gl.enable(S.gl.CULL_FACE);
     S.renderFallingTrees(VP,fogColor,cam);
     S.renderPlacedTorches(VP, fogColor, cam);
     S.renderCampfires(VP,fogColor,cam);
@@ -797,6 +947,7 @@ S.render = function render() {
     S.renderBedrolls(VP, fogColor, cam);
     if (S.cameraMode) S.renderPlayerAvatar(VP, fogColor, cam);
     S.renderRemotePlayers?.(VP,fogColor,cam);
+    S.renderVillage?.(VP,fogColor,cam);
     S.gl.enable(S.gl.BLEND);
     S.gl.blendFunc(S.gl.SRC_ALPHA, S.gl.ONE_MINUS_SRC_ALPHA);
     S.gl.depthMask(false);
@@ -813,8 +964,11 @@ S.render = function render() {
     S.gl.enable(S.gl.BLEND);
     S.gl.blendFunc(S.gl.SRC_ALPHA, S.gl.ONE_MINUS_SRC_ALPHA);
     S.gl.depthMask(false);
-    for (const c of S.chunks.values())if(visibleChunk(c))
-        S.drawVoxelMesh(c.water, .68, VP, cam, fogColor, fogNear, fogFar, S.clamp(day + S.lightning, 0, 1), torchPos, torchPower, 1);
+    for (const c of S.chunks.values()) {
+        if (!visibleChunk(c)) continue;
+        S.activeChunkLamps=S.chunkLampUniforms(c.cx,c.cz);
+        S.drawVoxelMesh(c.water, 1, VP, cam, fogColor, fogNear, fogFar, S.clamp(day + S.lightning, 0, 1), torchPos, torchPower, 1);
+    }
     S.renderParticles(VP);
     S.renderRain(VP);
     S.renderScanHighlights(VP, fogColor, cam);

@@ -1,4 +1,6 @@
 // Native ES bootstrap. No runtime bundler or eval.
+import {install as installWaterReflections} from './render/water-reflections.js';
+import {install as installGraphics} from './ui/graphics.js';
 import { state as S } from './state.js';
 import { createChunkWorker } from './world/worker/client.js';
 import { loadGameData } from './data/loader.js';
@@ -15,6 +17,9 @@ import {install as install6} from './world/worldgen.js';
 import {install as install7} from './world/world-api.js';
 import {install as install8} from './render/held-block.js';
 import {install as installEquipment} from './render/equipment-models.js';
+import {install as installCrops} from './render/crops.js';
+import {install as installFlora} from './render/flora.js';
+import {install as installFrustum} from './render/frustum.js';
 import {install as installSunShadows} from './render/shadows.js';
 import {install as install9} from './render/chunks.js';
 import {install as install10} from './render/entities.js';
@@ -46,6 +51,8 @@ import {install as installMenuScene} from './render/menu-scene.js';
 import {install as installCodex} from './ui/recipe-codex.js';
 import {install as installMultiplayer} from './net/multiplayer.js';
 import {install as installDesktopHost} from './ui/desktop-host.js';
+import {install as installVillage} from './sim/village.js';
+import {install as installVillageUI} from './ui/village-ui.js';
 
 try {
   const [data,shaders,textures]=await Promise.all([loadGameData(),loadShaders(),loadTextureOverrides()]);
@@ -64,11 +71,15 @@ try {
   install7(S); // world/world-api.js
   installSunShadows(S); // dynamic sun shadows on loaded voxels
   install8(S); // render/held-block.js
+  installCrops(S);
+  installFlora(S); // independent visual-only vegetation mesh, 30-biome palette
+  installFrustum(S); // conservative six-plane visibility culling
   installEquipment(S); // unified first/third person equipment silhouettes
   install9(S); // render/chunks.js
   install10(S); // render/entities.js
   install11(S); // audio/mixer.js
   install12(S); // sim/structures.js
+  installVillage(S); // deterministic village quest, citizens and prefabs
   install13(S); // sim/player.js
   install14(S); // sim/mobs/definitions.js
   install15(S); // sim/mobs/wolf-senses.js
@@ -88,10 +99,13 @@ try {
   installTrees(S); // natural tree felling + weighted swing direction
   install26(S); // render/weather.js
   install27(S); // render/scene.js
+  installWaterReflections(S);
+  installGraphics(S);
   installMenuScene(S); // shared WebGL atlas + shader driven rotating voxel scene for the start menu
   install28(S); // ui/minimap.js
   install29(S); // ui/hud.js
   installCodex(S); // illustrated crafting handbook
+  installVillageUI(S); // four-page journal and village building board
   install30(S); // ui/test-api.js
   installMultiplayer(S); // co-op rooms, WebSocket sync, remote avatars, multiplayer UI
   installDesktopHost(S); // Electron only: server spawn, ngrok tunnel and host menu
