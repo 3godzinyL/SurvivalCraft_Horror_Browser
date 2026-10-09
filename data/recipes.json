@@ -486,5 +486,109 @@
     "key": {
       "I": "iron_ingot"
     }
+  },
+  {
+    "out": {
+      "reinforced_wood": 1
+    },
+    "pattern": [
+      "XXX",
+      "XXX",
+      "XXX"
+    ],
+    "key": {
+      "X": "planks"
+    }
+  },
+  {
+    "out": {
+      "reinforced_cobble": 1
+    },
+    "pattern": [
+      "XXX",
+      "XXX",
+      "XXX"
+    ],
+    "key": {
+      "X": "cobble"
+    }
+  },
+  {
+    "out": {
+      "reinforced_stone": 1
+    },
+    "pattern": [
+      "XXX",
+      "XXX",
+      "XXX"
+    ],
+    "key": {
+      "X": "stone"
+    }
+  },
+  {
+    "out": {
+      "reinforced_iron": 1
+    },
+    "pattern": [
+      "XXX",
+      "XXX",
+      "XXX"
+    ],
+    "key": {
+      "X": "iron_ingot"
+    }
+  },
+  {
+    "out": {
+      "forest_poultice": 2
+    },
+    "shapeless": {
+      "field_herbs": 2,
+      "plant_fiber": 2
+    }
+  },
+  {
+    "out": {
+      "healing_wrap": 1
+    },
+    "shapeless": {
+      "forest_poultice": 1,
+      "moonflower": 1,
+      "plant_fiber": 2
+    }
+  },
+  {
+    "out": {
+      "hunter_salve": 1
+    },
+    "shapeless": {
+      "healing_wrap": 1,
+      "blood_petal": 1,
+      "field_herbs": 2
+    }
+  },
+  {
+    "out": {
+      "bandage": 2
+    },
+    "shapeless": {
+      "field_herbs": 3,
+      "plant_fiber": 3
+    }
+  },
+  {
+    "out": {
+      "campfire": 1
+    },
+    "pattern": [
+      " S ",
+      "SCS",
+      "CCC"
+    ],
+    "key": {
+      "S": "stick",
+      "C": "cobble"
+    }
   }
 ]

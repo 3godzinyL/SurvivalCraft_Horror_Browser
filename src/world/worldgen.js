@@ -13,10 +13,12 @@ S.dirtyChunks = new Set();
 S.fortifications = new Map();
 
 S.furnaces = new Map();
+S.torchMounts = new Map();
 
 S.worldSpawn = null;
+S.worldgenVersion = 16;
 
-S.renderDistance = 4;
+S.renderDistance = 12;
 
 S.chunkKey = (cx, cz) => `${cx},${cz}`;
 
@@ -68,7 +70,13 @@ S.terrainHeight = function terrainHeight(wx, wz) {
     const ravineField = Math.abs(S.fbm2(x * .0052 + 812, z * .0052 - 659) - .5) * 2;
     const ravine = S.clamp((.030 - ravineField) * 170, 0, 5.2) * S.clamp((local - .42) * 4, 0, 1);
     let h = broad + relief + mountains + shelf - riverCut - basinCut - ravine - Math.max(0, .34 - valley) * 8.5;
-    // Preserve beaches/low wetlands while allowing true high peaks.
+    if((S.worldgenVersion||16)>=18){
+        const hills=S.fbm2(x*.0067+353,z*.0067-167),foothills=S.clamp((hills-.47)*3.4,0,1);
+        h+=foothills*8.5+Math.pow(S.clamp(S.fbm2(x*.0101-117,z*.0101+303)-.59,0,1)*4,1.3)*36;
+        // Longer gentle patches contrast with wooded and steep country.
+        const glade=S.fbm2(x*.014-813,z*.014+932);
+        if(glade>.52&&glade<.62)h-=S.clamp((glade-.52)*15,0,1)*1.6;
+    }
     return S.clamp(Math.floor(h), 5, S.WORLD_H - 7);
 };
 
@@ -102,6 +110,19 @@ S.biomeAt = function biomeAt(wx, wz, hKnown = null) {
         return 'red_barrens';
     if (temp > .68 && moisture < .36)
         return 'chaparral';
+    // V22 wider, connected meadow patches. Sampling at macro frequency makes
+    // outcrops and wildlife occur in recognizable clearings, not 1-block dots.
+    // Older worldgen versions are deliberately byte-identical.
+    if((S.worldgenVersion||16)>=22 && h>S.SEA+5 && h<55 &&
+       temp>.32 && temp<.75 && moisture>.41 && moisture<.75){
+        const meadowField=S.fbm2(x*.0029+711,z*.0029-491);
+        if(meadowField>.535 && meadowField<.725)
+            return weird>.65?'flower_meadow':'meadow';
+    }
+    if((S.worldgenVersion||16)>=18 && h> S.SEA+4 && h<56 && moisture>.49 && moisture<.79){
+        const clearing=S.fbm2(x*.0131+425,z*.0131-734);
+        if(clearing>.54 && clearing<.635)return weird>.52?'flower_meadow':'meadow';
+    }
     if (moisture > .75 && weird > .60)
         return 'mist_forest';
     if (moisture > .69 && forestNoise > .59)
@@ -194,7 +215,25 @@ S.caveMouthDepth = function caveMouthDepth(wx, wz, h) {
     const d = (dx * dx) / (rx * rx) + (dz * dz) / (rz * rz);
     if (d >= 1 || h <= S.SEA + 3)
         return 0;
+    if((S.worldgenVersion||16)>=18){
+        const entrance=2+Math.floor((1-d)*3);
+        // Partial diagonal cave entrance rather than a deep vertical pit.
+        return Math.min(5,entrance);
+    }
     return 3 + Math.floor((1 - d) * 9);
+};
+
+// V18 diagonal surface entries: winding ramps connecting the natural caves;
+// old worldgen versions never evaluate this branch.
+S.caveRampOpen = function caveRampOpen(wx,y,wz,h){
+    if((S.worldgenVersion||16)<18)return false;
+    const d=h-y;if(d<2||d>19||h<=S.SEA+3)return false;
+    const cell=52,cx=S.floorDiv(wx,cell),cz=S.floorDiv(wz,cell);
+    if(S.hash2i(cx,cz,S.worldSeed^0xcafe)<.68)return false;
+    const px=cx*cell+8+Math.floor(S.hash2i(cx,cz,S.worldSeed^0x91a2)*(cell-16));
+    const pz=cz*cell+8+Math.floor(S.hash2i(cx,cz,S.worldSeed^0x72f1)*(cell-16));
+    const ux=px+(d-2)*.78,uz=pz+Math.sin((d-2)*.32)*1.6;
+    return (wx-ux)**2+(wz-uz)**2 <(d>15?2.7:1.95)**2;
 };
 
 S.mineshaftInfo = function mineshaftInfo(wx, wz) {
@@ -211,6 +250,25 @@ S.mineshaftCell = function mineshaftCell(wx, y, wz) {
     if (!m.enabled)
         return 0;
     const dx = wx - m.centerX, dz = wz - m.centerZ, dy = y - m.y;
+    if((S.worldgenVersion||16)>=18){
+        // Branching, rising tunnels with room pockets and warped walls.
+        const phase=S.hash2i(S.floorDiv(m.centerX,64),S.floorDiv(m.centerZ,64),0xf0b)*6.283;
+        const bendX=Math.round(Math.sin(dx*.085+phase)*3.1);
+        const bendZ=Math.round(Math.sin(dz*.09-phase)*2.6);
+        const pathX=Math.abs(dz-bendX)<=1.5&&Math.abs(dx)<=26;
+        const pathZ=Math.abs(dx-bendZ)<=1.5&&Math.abs(dz)<=26;
+        const spur=Math.abs(dz-12-Math.sin(dx*.16)*2)<=1&&dx>4&&dx<22;
+        const chamber=(dx+10)**2+(dz-10)**2<52||(dx-13)**2+(dz+8)**2<48||dx*dx+dz*dz<37;
+        const floor=m.y+Math.round(Math.sin(dx*.12+dz*.09+phase)*1.2);
+        const yoff=y-floor;
+        if(yoff<0||yoff>4||!(pathX||pathZ||spur||chamber))return 0;
+        const broken=S.hash2i(wx,wz,0xdecd)>.983;
+        if(broken && yoff<3)return 0;
+        const beam=(pathX&&Math.abs(dx)%7===0)||(pathZ&&Math.abs(dz)%7===0);
+        if(beam&&yoff===4)return 2;
+        if(beam&&yoff<=3 && (pathX?Math.abs(dz-bendX)>1.05:Math.abs(dx-bendZ)>1.05))return 2;
+        return 1;
+    }
     const corridorX = Math.abs(dz) <= 1 && Math.abs(dx) <= 27 && dy >= 0 && dy <= 3;
     const corridorZ = Math.abs(dx) <= 1 && Math.abs(dz) <= 27 && dy >= 0 && dy <= 3;
     const room = Math.abs(dx) <= 5 && Math.abs(dz) <= 5 && dy >= 0 && dy <= 4;
@@ -247,7 +305,9 @@ S.deepRockAt = function deepRockAt(wx, y, wz, biome) {
     if (strata > .82)
         return S.B.GRANITE;
     if (strata > .66 && y < 26)
-        return S.B.DARKSTONE;
+        return (S.worldgenVersion || 16) >= 21
+            ? (S.hash3i(wx,y,wz,0xD411)<.075 ? S.B.DARKSTONE : S.hash3i(wx,y,wz,0xC0BB)<.68 ? S.B.COBBLE : S.B.STONE)
+            : S.B.DARKSTONE;
     if ((biome === 'highlands' || biome === 'rocky' || biome === 'alpine' || y > 43) && S.hash3i(wx, y, wz, 0x423) > .48)
         return S.B.SLATE;
     if (strata > .46 && strata < .50 && y < 26)
@@ -273,7 +333,8 @@ S.oreAt = function oreAt(wx, y, wz, baseRock) {
     return baseRock;
 };
 
-S.RUIN_TYPES = S.GAME_DATA.ruins.types;
+S.RUIN_TYPES = S.GAME_DATA.ruins.types.slice(0,16); // frozen V14 archetypes for old save hashes
+S.NEW_RUIN_TYPES = S.GAME_DATA.ruins.types;
 
 S.RUIN_CELL = 88;
 
@@ -294,10 +355,39 @@ S.ruinCandidateForCell = function ruinCandidateForCell(cellX, cellZ) {
     }
     if (hi - lo > 7)
         return null;
-    const type = S.RUIN_TYPES[Math.floor(S.hash2i(cellX, cellZ, S.worldSeed ^ 0x66a4) * S.RUIN_TYPES.length) % S.RUIN_TYPES.length];
+    const types=(S.worldgenVersion||16)>=17?S.NEW_RUIN_TYPES:S.RUIN_TYPES;
+    const type = types[Math.floor(S.hash2i(cellX, cellZ, S.worldSeed ^ 0x66a4) * types.length) % types.length];
     return { cellX, cellZ, gx, gz, y, biome, type, rot: Math.floor(S.hash2i(cellX, cellZ, S.worldSeed ^ 0x66a5) * 4) % 4 };
 };
 
+// V22 landmark candidates use independent hash cells. They must not read
+// loaded chunks and must generate identically in the worker and fallback JS.
+S.OUTCROP_CELL=96;
+S.WRECK_CELL=144;
+S.outcropForCell=function outcropForCell(cx,cz){
+    if((S.worldgenVersion||16)<22)return null;
+    if(S.hash2i(cx,cz,S.worldSeed^0xE31A)<.36)return null;
+    const x=cx*S.OUTCROP_CELL+12+Math.floor(S.hash2i(cx,cz,S.worldSeed^0xE31B)*(S.OUTCROP_CELL-24));
+    const z=cz*S.OUTCROP_CELL+12+Math.floor(S.hash2i(cx,cz,S.worldSeed^0xE31C)*(S.OUTCROP_CELL-24));
+    const y=S.terrainHeight(x,z),b=S.biomeAt(x,z,y);
+    if(!['meadow','flower_meadow','plains','cold_plains'].includes(b)||y<=S.SEA+3||y>76)return null;
+    if(Math.max(...[[6,0],[-6,0],[0,6],[0,-6]].map(([dx,dz])=>Math.abs(S.terrainHeight(x+dx,z+dz)-y)))>5)return null;
+    const t=S.hash2i(cx,cz,S.worldSeed^0xE31D);
+    return {x,z,y,type:t>.90?'gold':t>.52?'iron':'coal',radius:3+Math.floor(S.hash2i(cx,cz,S.worldSeed^0xE31E)*2)};
+};
+S.wreckForCell=function wreckForCell(cx,cz){
+    if((S.worldgenVersion||16)<22)return null;
+    if(S.hash2i(cx,cz,S.worldSeed^0xA701)<.20)return null;
+    const x=cx*S.WRECK_CELL+14+Math.floor(S.hash2i(cx,cz,S.worldSeed^0xA702)*(S.WRECK_CELL-28));
+    const z=cz*S.WRECK_CELL+14+Math.floor(S.hash2i(cx,cz,S.worldSeed^0xA703)*(S.WRECK_CELL-28));
+    const h=S.terrainHeight(x,z);
+    if(h>S.SEA-2||h<S.SEA-15)return null;
+    const rot=Math.floor(S.hash2i(cx,cz,S.worldSeed^0xA704)*4);
+    // Prevent stranding on dry land in the forward direction.
+    const v=rot%2?[1,0]:[0,1];
+    if(S.terrainHeight(x+v[0]*7,z+v[1]*7)>S.SEA+1)return null;
+    return {x,z,y:S.SEA-1,rot};
+};
 S.generateChunkData = function generateChunkData(cx, cz) {
     const data = new Uint8Array(S.CHUNK * S.WORLD_H * S.CHUNK), topCache = new Int16Array(S.CHUNK * S.CHUNK), bioCache = [];
     for (let lz = 0; lz < S.CHUNK; lz++)
@@ -314,7 +404,7 @@ S.generateChunkData = function generateChunkData(cx, cz) {
                     id = S.B.AIR;
                 else if (y < h - soilDepth) {
                     const mine = S.mineshaftCell(wx, y, wz);
-                    if (mine === 1)
+                    if (S.caveRampOpen(wx,y,wz,h) || mine === 1)
                         id = S.B.AIR;
                     else if (mine === 2)
                         id = S.B.PINEWOOD;
@@ -361,6 +451,70 @@ S.generateChunkData = function generateChunkData(cx, cz) {
                 col(dx, dz, h - (S.hash3i(r.gx + dx, 1, r.gz + dz, 0x6b13) > .72 ? 1 : 0), id, gap);
             } };
         switch (r.type) {
+            case 'abandoned_wood_house':
+            case 'collapsed_wood_house': {
+                // A complete *world-space* structure: cross-chunk walls, broken
+                // roof, excavated basement, interior loot and walkable stairs.
+                const broken=r.type==='collapsed_wood_house';
+                const floor=r.y,hash=(x,y,z)=>S.hash3i(r.gx+x,y,r.gz+z,S.worldSeed^0x17777);
+                const putHouse=(x,y,z,id)=>block(x,y-floor,z,id,true,floor);
+                // Solid cellar boundary and fully excavated 5-block chamber.
+                for(let z=-3;z<=3;z++)for(let x=-4;x<=4;x++){
+                    for(let yy=floor-5;yy<=floor;yy++) {
+                        const edge=Math.abs(x)===4||Math.abs(z)===3;
+                        putHouse(x,yy,z, yy===floor-5?S.B.STONE_BRICKS:edge?S.B.MOSSY_BRICKS:S.B.AIR);
+                    }
+                    if(Math.abs(x)<=3&&Math.abs(z)<=2)putHouse(x,floor,z,S.B.OLD_PLANKS);
+                }
+                // A 2-block-wide entrance/shaft and graded stone stair landing.
+                for(let k=0;k<5;k++){
+                    for(const dx of [0,1]){
+                        putHouse(dx,floor-k,-2+k,S.B.AIR);
+                        if(k<4)putHouse(dx,floor-k-1,-2+k,S.B.STONE_BRICKS);
+                    }
+                }
+                for(let z=-4;z<=4;z++)for(let x=-5;x<=5;x++){
+                    const perimeter=Math.abs(x)===5||Math.abs(z)===4;
+                    if(!perimeter)continue;
+                    const door=z===-4&&Math.abs(x)<=1;
+                    for(let h=0;h<(broken?3:4);h++){
+                        if(door&&h<=2)continue;
+                        if(hash(x,h,z)>(broken?.63:.82))continue;
+                        putHouse(x,floor+h,z,(h===0?S.B.DEADWOOD:(hash(x,h+2,z)>.75?S.B.DARK_PLANKS:S.B.OLD_PLANKS)));
+                    }
+                }
+                for(const [x,z] of [[-5,-4],[5,-4],[-5,4],[5,4]])for(let h=0;h<5;h++)putHouse(x,floor+h,z,S.B.PINEWOOD);
+                for(let z=-4;z<=4;z++)for(let x=-5;x<=5;x++){
+                    if(hash(x,9,z)<(broken?.54:.21))continue;
+                    putHouse(x,floor+5+(Math.abs(x)===5?0:Math.abs(x)>2?1:2),z,
+                       hash(x,8,z)>.28?S.B.DARK_PLANKS:S.B.OLD_TILES);
+                }
+                // Broken floor reveals the cellar and creates a path to descend.
+                for(let z=-2;z<=1;z++)for(let x=-1;x<=2;x++)putHouse(x,floor,z,S.B.AIR);
+                // Old crate in the basement; deterministic loot is keyed to XYZ.
+                putHouse(-2,floor-4,1,S.B.CHEST);
+                putHouse(2,floor+1,2,S.B.CHEST);
+                for(const [x,z] of [[-4,-2],[4,2]])putHouse(x,floor+1,z,S.B.COBBLE);
+                if((S.worldgenVersion||16)>=18){
+                    // Larger homestead site; keep the historic basement coordinates.
+                    for(let x=-9;x<=9;x++)for(const z of [-8,8]){
+                        if(hash(x,13,z)>.36)putHouse(x,floor,z,S.B.DEADWOOD);
+                    }
+                    for(let z=-7;z<=7;z++)for(const x of [-9,9]){
+                        if(hash(x,17,z)>.41)putHouse(x,floor,z,S.B.OLD_PLANKS);
+                    }
+                    for(let x=-8;x<=8;x++)for(let z=-7;z<=7;z++){
+                        if(hash(x,18,z)>.94)putHouse(x,floor,z,S.B.RUBBLE);
+                    }
+                    for(let x=-8;x<=-3;x++)for(let z=5;z<=7;z++){
+                        putHouse(x,floor,z,S.B.OLD_PLANKS);
+                        if(x===-8||x===-3||z===5||z===7){
+                            if(hash(x,20,z)>.30)putHouse(x,floor+1,z,S.B.DEADWOOD);
+                        }
+                    }
+                }
+                break;
+            }
             case 'crumbled_tower': {
                 floorRect(-4, 4, -4, 4, S.B.RUBBLE, .36);
                 wallRect(4, 4, 5, S.B.WEATHERED_BRICKS, .22);
@@ -808,6 +962,57 @@ S.generateChunkData = function generateChunkData(cx, cz) {
                 continue;
             placeRuin(ruin);
         }
+    // V22 surface landmarks: small ore-bearing rocky mounds in broad meadows.
+    // The surrounding vegetation is displaced only where the stone lands.
+    if((S.worldgenVersion||16)>=22){
+        const minx=cx*S.CHUNK-18,maxx=(cx+1)*S.CHUNK+18;
+        const minz=cz*S.CHUNK-18,maxz=(cz+1)*S.CHUNK+18;
+        const forCells=(size,fn,place)=>{
+            for(let iz=S.floorDiv(minz,size);iz<=S.floorDiv(maxz,size);iz++)
+                for(let ix=S.floorDiv(minx,size);ix<=S.floorDiv(maxx,size);ix++){
+                    const c=fn(ix,iz);if(c&&c.x>=minx&&c.x<=maxx&&c.z>=minz&&c.z<=maxz)place(c);
+                }
+        };
+        forCells(S.OUTCROP_CELL,S.outcropForCell,c=>{
+            for(let dz=-c.radius;dz<=c.radius;dz++)for(let dx=-c.radius;dx<=c.radius;dx++){
+                const dist=Math.hypot(dx,dz),w=c.x+dx,q=c.z+dz;
+                const noise=S.hash2i(w,q,S.worldSeed^0xE342);
+                if(dist>c.radius+.2 || noise<(dist/c.radius-.72)*.5)continue;
+                const y=S.terrainHeight(w,q),rise=Math.max(1,Math.round(2.8-dist*.52+noise*.8));
+                for(let iy=0;iy<rise;iy++){
+                    const ore=noise>.65 && (iy===rise-1 || (iy===rise-2 && noise>.91));
+                    const stone=noise>.83?S.B.STONE:S.B.COBBLE;
+                    putW(w,y+iy,q,ore?(c.type==='gold'?S.B.GOLD:c.type==='iron'?S.B.IRON:S.B.COAL):stone,true);
+                }
+            }
+        });
+        // Half-sunken wrecks: hull / broken rails / mast / hold chest. All
+        // pieces are world-space, so a chunk seam cannot cut the structure.
+        forCells(S.WRECK_CELL,S.wreckForCell,c=>{
+            const axis=(dx,dz)=>c.rot===0?[dx,dz]:c.rot===1?[-dz,dx]:c.rot===2?[-dx,-dz]:[dz,-dx];
+            const set=(dx,dy,dz,id)=>{const [a,b]=axis(dx,dz);putW(c.x+a,c.y+dy,c.z+b,id,true);};
+            const rr=(dx,dy,dz)=>S.hash3i(c.x+dx,c.y+dy,c.z+dz,S.worldSeed^0xA71A);
+            for(let z=-8;z<=8;z++)for(let x=-3;x<=3;x++){
+                const edge=Math.abs(x)===3;
+                if(Math.abs(z)>=7 && Math.abs(x)>1)continue;
+                const smashed=(z>3 && rr(x,0,z)>.55)||(z<-4 && rr(x,0,z)>.74);
+                if(!smashed){
+                    set(x,-1,z,rr(x,-2,z)>.83?S.B.DEADWOOD:S.B.OLD_PLANKS);
+                    set(x,0,z,edge?S.B.DARK_PLANKS:(rr(x,2,z)>.27?S.B.OLD_PLANKS:S.B.AIR));
+                    if(edge && rr(x,3,z)>.45)set(x,1,z,S.B.DEADWOOD);
+                }
+            }
+            for(const z of [-6,-1,5])for(let x=-3;x<=3;x++)if(rr(x,7,z)>.13)set(x,1,z,S.B.PINEWOOD);
+            for(let y=1;y<8;y++){
+                if(y>5&&rr(0,y,0)>.52)continue;
+                set(0,y,0,S.B.PINEWOOD);
+            }
+            for(let y=3;y<6;y++)for(let x=-2;x<=2;x++)if((x+y)%3!==0)set(x,y,0,S.B.OLD_PLANKS);
+            set(-1,1,-3,S.B.CHEST);
+            set(-1,2,-3,S.B.AIR);
+            for(let i=0;i<5;i++)set(2,1+i,i-6,S.B.DEADWOOD);
+        });
+    }
     for (const [key, val] of S.edits) {
         const [x, y, z] = key.split(',').map(Number);
         if (S.floorDiv(x, S.CHUNK) === cx && S.floorDiv(z, S.CHUNK) === cz && y >= 0 && y < S.WORLD_H)
@@ -822,6 +1027,12 @@ S.ensureChunk = function ensureChunk(cx, cz) {
     if (!c) {
         c = { cx, cz, data: S.generateChunkData(cx, cz), opaque: null, water: null, dirty: true };
         S.chunks.set(key, c);
+        S.dirtyChunks.add(key);
+        // As neighbouring chunks arrive, rebuild seam geometry using real blocks.
+        if(S.markDirty){
+            S.markDirty(cx-1,cz);S.markDirty(cx+1,cz);
+            S.markDirty(cx,cz-1);S.markDirty(cx,cz+1);
+        }
     }
     return c;
 };

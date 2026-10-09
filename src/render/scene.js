@@ -21,6 +21,13 @@ S.drawVoxelMesh = function drawVoxelMesh(m, alpha, VP, cam, fogColor, fogNear, f
     S.gl.uniform1f(S.VL.alpha, alpha);
     S.gl.uniform1f(S.VL.time, performance.now() / 1000);
     S.gl.uniform1f(S.VL.water, waterMode);
+    const shadow=S.sunShadow;
+    S.gl.uniform2fv(S.VL.shadowOrigin, shadow?.origin || [0,0]);
+    S.gl.uniform1f(S.VL.shadowSpan, shadow?.span || 256);
+    S.gl.uniform1f(S.VL.shadowAmount, shadow?.valid && S.running && !waterMode ? 1 : 0);
+    S.gl.activeTexture(S.gl.TEXTURE1);
+    S.gl.bindTexture(S.gl.TEXTURE_2D,shadow?.tex || null);
+    S.gl.uniform1i(S.VL.shadowHeight,1);
     S.gl.activeTexture(S.gl.TEXTURE0);
     S.gl.bindTexture(S.gl.TEXTURE_2D, S.atlas.tex);
     S.gl.uniform1i(S.VL.tex, 0);
@@ -33,6 +40,10 @@ S.drawVoxelMesh = function drawVoxelMesh(m, alpha, VP, cam, fogColor, fogNear, f
     S.gl.bindBuffer(S.gl.ARRAY_BUFFER, m.u);
     S.gl.enableVertexAttribArray(S.VL.uv);
     S.gl.vertexAttribPointer(S.VL.uv, 2, S.gl.FLOAT, false, 0, 0);
+    if(S.VL.wind>=0){
+        if(m.wind){S.gl.bindBuffer(S.gl.ARRAY_BUFFER,m.wind);S.gl.enableVertexAttribArray(S.VL.wind);S.gl.vertexAttribPointer(S.VL.wind,1,S.gl.UNSIGNED_BYTE,true,0,0);}
+        else {S.gl.disableVertexAttribArray(S.VL.wind);S.gl.vertexAttrib1f(S.VL.wind,0);}
+    }
     S.gl.drawArrays(S.gl.TRIANGLES, 0, m.count);
 };
 
@@ -91,10 +102,76 @@ S.renderContactShadows = function renderContactShadows(VP, fogColor, cam, day) {
     }
 };
 
+S.renderPlayerAvatar=function renderPlayerAvatar(VP,fogColor,cam){
+    const p=S.player.pos, yaw=-S.player.yaw, moving=Math.hypot(S.player.vel[0],S.player.vel[2])>.7;
+    const stride=moving?Math.sin(S.player.movePhase*1.5)*.32:0, bounce=moving?Math.abs(Math.sin(S.player.movePhase*1.5))*.045:Math.sin(performance.now()*.002)*.011;
+    const skin=[.57,.43,.33,1],cloth=[.12,.19,.15,1],pants=[.11,.13,.14,1];
+    const partTint=part=>{const st=S.armorSlots[part],d=st&&S.itemDefs[st.id];return !d?null:d.tier==='iron'?[.45,.51,.55,1]:[.43,.29,.18,1]};
+    const draw=(off,sz,col,rx=0)=>S.drawBox(VP,S.rotatedOffset(p,[off[0],off[1]+bounce,off[2]],yaw),sz,col,yaw,fogColor,cam,rx);
+    draw([0,1.30,0],[.56,.69,.29],partTint('chest')||cloth);
+    draw([0,1.86,0],[.40,.38,.36],partTint('head')||skin);
+    draw([-.35,1.3,0],[.18,.68,.22],partTint('chest')||cloth,-stride);
+    draw([.35,1.3,0],[.18,.68,.22],partTint('chest')||cloth,stride);
+    for (const side of [-1,1]) {
+        draw([side*.15,.49,side*stride*.24],[.22,.95,.24],partTint('legs')||pants,side*stride);
+        draw([side*.15,.115,-.075+side*stride*.4],[.23,.22,.39],partTint('feet')||[.17,.12,.10,1]);
+    }
+    // Face: head orientation, expressive eyes, nose, hair and shoulder seams.
+    draw([0,2.075,-.02],[.45,.13,.41],[.16,.12,.085,1]);
+    for(const sx of [-1,1]){
+        draw([sx*.156,1.90,-.194],[.080,.075,.018],[.83,.87,.78,1]);
+        draw([sx*.161,1.90,-.211],[.035,.053,.018],[.12,.15,.17,1]);
+        draw([sx*.156,1.967,-.200],[.09,.027,.019],[.19,.12,.09,1]);
+    }
+    draw([0,1.78,-.191],[.145,.022,.018],[.29,.16,.12,1]);
+    const equipped=S.selectedItem();
+    if(equipped&&S.countItem(equipped)>0){
+      const hand=S.rotatedOffset(p,[.52,.9+bounce,-.26+stride*.12],yaw);
+      S.drawBox(VP,hand,[.11,.24,.12],[.50,.34,.25,1],yaw,fogColor,cam,-stride*.36);
+      S.drawEquipmentModel(VP,S.rotatedOffset(hand,[0,.21,-.05],yaw),yaw,-stride*.20,.03,equipped,fogColor,cam,.70);
+    }
+    if(partTint('chest')){draw([0,1.41,-.17],[.45,.15,.07],[.18,.13,.10,1]);draw([0,1.13,-.17],[.46,.065,.07],[.64,.47,.29,1]);}
+};
+
 S.renderEnemy = function renderEnemy(e, VP, fogColor, cam) {
     const def = S.enemyDefs[e.type], ry = -(e.renderFacing ?? e.facing ?? Math.atan2(S.player.pos[0] - e.pos[0], -(S.player.pos[2] - e.pos[2]))), flash = e.flash > 0 ? [.72, .10, .08, 1] : def.color, g = Math.sin(e.gait), g2 = Math.sin(e.gait + Math.PI), breath = Math.sin(e.age * 2.2) * .035;
     const eyeColor = e.type === 'wraith' ? [.35, .55, 1, 1] : e.type === 'watcher' || e.type === 'crawler' ? [1, .04, .025, 1] : [.82, .66, .22, 1];
-    if (['deer', 'doe', 'moose', 'horse'].includes(e.type)) {
+    if(def.flying){
+        const scale=e.type==='night_harrier'?1.38:1,beat=Math.sin(e.gait)*.5,flutter=Math.cos(e.age*13)*.13;
+        const body=[e.pos[0],e.pos[1],e.pos[2]];
+        S.drawBox(VP,body,[.38*scale,.47*scale,.68*scale],flash,ry,fogColor,cam,.12);
+        S.drawBox(VP,S.rotatedOffset(body,[0,.11*scale,-.38*scale],ry),[.38*scale,.30*scale,.34*scale],flash,ry,fogColor,cam);
+        const wing=def.color.map((c,i)=>i===3?1:c*.88);
+        for(const side of [-1,1]){
+            const anchor=S.rotatedOffset(body,[side*.48*scale,.05+beat*.17,.01],ry);
+            S.drawBox(VP,anchor,[.81*scale,.045,.41*scale],wing,ry,fogColor,cam,0,side*(beat*.45+flutter));
+            const tip=S.rotatedOffset(body,[side*1.0*scale,.08+beat*.27,.12],ry);
+            S.drawBox(VP,tip,[.62*scale,.035,.24*scale],wing,ry,fogColor,cam,0,side*(beat*.62));
+        }
+        for(const side of [-1,1]){
+            const eye=S.rotatedOffset(body,[side*.15*scale,.12*scale,-.55*scale],ry);
+            S.drawBox(VP,eye,[.08,.055,.04],e.skyState==='dive'?[1,.22,.05,1]:[.93,.50,.08,1],ry,fogColor,cam);
+        }
+        S.drawBox(VP,S.rotatedOffset(body,[0,-.14,.42*scale],ry),[.2,.08,.51*scale],flash,ry,fogColor,cam,-.23);
+        return;
+    }
+    if(e.type==='hollowed'){
+        const body=S.rotatedOffset(e.pos,[0,1.13+breath,0],ry);
+        const skin=e.flash>0?flash:[.18,.205,.19,1], rot=(Math.sin(e.age*1.2)*.04);
+        S.drawBox(VP,body,[1.05,1.56,.64],skin,ry,fogColor,cam,rot);
+        S.drawBox(VP,S.rotatedOffset(e.pos,[0,2.15+breath,-.11],ry),[.69,.79,.67],[.22,.23,.21,1],ry,fogColor,cam,-.12);
+        S.drawBox(VP,S.rotatedOffset(e.pos,[0,1.83,-.48],ry),[.27,.45,.12],[.045,.038,.038,1],ry,fogColor,cam);
+        for(const side of [-1,1]){
+            S.drawBox(VP,S.rotatedOffset(e.pos,[side*.27,2.24,-.463],ry),[.21,.17,.032],[.025,.024,.026,1],ry,fogColor,cam);
+            const sway=Math.sin(e.age*1.9+side*1.9)*.09;
+            S.drawBox(VP,S.rotatedOffset(e.pos,[side*.29+sway*.3,1.93,-.51],ry),[.034,.66,.041],[.37,.12,.13,1],ry,fogColor,cam,sway);
+            S.drawBox(VP,S.rotatedOffset(e.pos,[side*.29+sway,1.57+Math.sin(e.age*2+side)*.11,-.54],ry),[.22,.19,.20],[.77,.69,.56,1],ry,fogColor,cam);
+            S.drawBox(VP,S.rotatedOffset(e.pos,[side*.29+sway,1.57+Math.sin(e.age*2+side)*.11,-.653],ry),[.09,.10,.032],[.20,.095,.07,1],ry,fogColor,cam);
+            S.drawBox(VP,S.rotatedOffset(e.pos,[side*.68,1.36,.02],ry),[.22,1.7,.27],skin,ry,fogColor,cam,Math.sin(e.gait)*.09);
+            S.drawBox(VP,S.rotatedOffset(e.pos,[side*.25,.36,.02+Math.sin(e.gait+side)*.08],ry),[.32,.77,.33],skin,ry,fogColor,cam);
+        }
+    }
+    else if (['deer', 'doe', 'moose', 'horse'].includes(e.type)) {
         const scale = e.type === 'moose' ? 1.22 : e.type === 'horse' ? 1.08 : e.type === 'deer' ? 1 : .86, body = [e.pos[0], e.pos[1] + .78 * scale + breath, e.pos[2]], neck = S.rotatedOffset(e.pos, [0, 1.14 * scale, -.56 * scale], ry), head = S.rotatedOffset(e.pos, [0, 1.48 * scale, -.82 * scale], ry);
         S.drawBox(VP, body, [1.02 * scale, .62 * scale, .48 * scale], flash, ry, fogColor, cam);
         S.drawBox(VP, neck, [.28 * scale, .72 * scale, .28 * scale], flash, ry, fogColor, cam, -.35);
@@ -173,7 +250,7 @@ S.renderEnemy = function renderEnemy(e, VP, fogColor, cam) {
             S.drawBox(VP, S.rotatedOffset(ep, [ex, 0, 0], ry), [.025, .025, .018], [.03, .03, .025, 1], ry, fogColor, cam);
     }
     else if (e.type === 'wolf') {
-        const run = Math.sin(e.gait), run2 = Math.sin(e.gait + Math.PI), headRy = ry - (e.lookOffset || 0) * .72, body = [e.pos[0], e.pos[1] + .56 + breath, e.pos[2]], chest = S.rotatedOffset(e.pos, [0, .66, -.46], ry), neck = S.rotatedOffset(e.pos, [0, .76, -.70], ry), head = S.rotatedOffset(neck, [0, .07, -.24], headRy), muzzle = S.rotatedOffset(head, [0, -.11, -.31], headRy);
+        const hitMotion=(e.impactAnim||0)/.46,run = Math.sin(e.gait)+hitMotion*.32, run2 = Math.sin(e.gait + Math.PI)-hitMotion*.28, headRy = ry - (e.lookOffset || 0) * .72, body = [e.pos[0], e.pos[1] + .56 + breath, e.pos[2]], chest = S.rotatedOffset(e.pos, [0, .66, -.46], ry), neck = S.rotatedOffset(e.pos, [0, .76, -.70], ry), head = S.rotatedOffset(neck, [0, .07-hitMotion*.12, -.24-hitMotion*.19], headRy), muzzle = S.rotatedOffset(head, [0, -.11, -.31], headRy);
         S.drawBox(VP, body, [1.26, .64, .54], flash, ry, fogColor, cam);
         S.drawBox(VP, chest, [.72, .73, .58], [flash[0] * .94, flash[1] * .94, flash[2] * .94, 1], ry, fogColor, cam, .06);
         S.drawBox(VP, neck, [.53, .62, .48], flash, ry, fogColor, cam, -.18);
@@ -181,7 +258,7 @@ S.renderEnemy = function renderEnemy(e, VP, fogColor, cam) {
         S.drawBox(VP, muzzle, [.34, .25, .47], [flash[0] * .72, flash[1] * .72, flash[2] * .70, 1], headRy, fogColor, cam);
         S.drawBox(VP, S.rotatedOffset(muzzle, [0, -.01, -.26], headRy), [.16, .12, .11], [.045, .04, .035, 1], headRy, fogColor, cam);
         for (const [ox, oz, phase] of [[-.38, -.34, run], [.38, -.34, run2], [-.38, .36, run2], [.38, .36, run]]) {
-            const swing = phase * .18, upper = S.rotatedOffset(e.pos, [ox, .30, oz + swing * .24], ry), lower = S.rotatedOffset(e.pos, [ox, .095, oz + swing * .48], ry);
+            const swing = phase * .18+((e.impactAnim||0)>0 && oz<0?Math.sin((.46-e.impactAnim)*21)*.19:0), upper = S.rotatedOffset(e.pos, [ox, .30, oz + swing * .24], ry), lower = S.rotatedOffset(e.pos, [ox, .095, oz + swing * .48], ry);
             S.drawBox(VP, upper, [.16, .48, .16], flash, ry, fogColor, cam, phase * .20);
             S.drawBox(VP, lower, [.135, .34, .135], [flash[0] * .90, flash[1] * .90, flash[2] * .88, 1], ry, fogColor, cam, -phase * .16);
         }
@@ -291,129 +368,156 @@ S.renderTargetOutline = function renderTargetOutline(VP, fogColor, cam) {
     S.gl.uniform4fv(S.CL.color, new Float32Array([.65, .70, .66, .18 + .18 * damage]));
     S.gl.drawArrays(S.gl.LINES, 0, S.outlineVerts.length / 3);
     if ((S.input.mouseLeft || structuralDamage > .002) && damage > .001) {
-        const visual = Math.max(.16, Math.pow(S.clamp(damage, 0, 1), .62));
+        const visual = S.clamp(damage, 0, 1);
         S.gl.bindBuffer(S.gl.ARRAY_BUFFER, S.crackBuffer);
         S.gl.vertexAttribPointer(S.CL.pos, 3, S.gl.FLOAT, false, 0, 0);
-        S.gl.uniform4fv(S.CL.color, new Float32Array([.012, .008, .006, .82 + .17 * visual]));
-        const count = Math.max(18, Math.floor((S.crackVerts.length / 3) * visual));
-        S.gl.drawArrays(S.gl.TRIANGLES, 0, count - count % 6);
+        S.gl.uniform4fv(S.CL.color, new Float32Array([.052, .039, .030, .55 + .14 * visual]));
+        const count = Math.ceil(visual * S.crackStages) * S.crackVertsPerStage;
+        S.gl.drawArrays(S.gl.TRIANGLES, 0, count);
     }
 };
 
-S.renderHeldItem = function renderHeldItem(VP, fogColor, cam) {
-    const id = S.selectedItem(), def = S.itemDefs[id];
-    if (!def || S.countItem(id) <= 0)
-        return;
-    const dir = S.lookDir(), right = [Math.cos(S.player.yaw), 0, Math.sin(S.player.yaw)], swing = Math.sin(S.clamp(S.player.toolSwing, 0, 1) * Math.PI), bob = Math.sin(S.player.movePhase) * .025;
-    const base = [cam[0] + dir[0] * .78 + right[0] * (.41 + S.player.sway * .16), cam[1] - .47 + bob - swing * .065, cam[2] + dir[2] * .78 + right[2] * (.41 + S.player.sway * .16)], ry = S.player.yaw + .08 + swing * .25 * S.player.toolSwingSide, rx = -.18 - S.player.pitch * .32 + swing * .55;
-    const fore = [base[0] - right[0] * .10, base[1] - .24, base[2] - right[2] * .10];
-    S.drawBox(VP, fore, [.085, .30, .085], [.16, .105, .072, 1], ry, fogColor, cam, rx - .22, .12);
-    S.drawBox(VP, [base[0], base[1] - .035, base[2]], [.115, .115, .115], [.27, .18, .12, 1], ry, fogColor, cam, rx, .12);
-    if (id === 'torch') {
-        S.drawBox(VP, base, [.032, .36, .032], [.24, .145, .07, 1], ry, fogColor, cam, rx, .12);
-        const top = [base[0] + dir[0] * .02, base[1] + .22, base[2] + dir[2] * .02];
-        S.drawBox(VP, top, [.062, .075, .062], [.66, .24, .045, 1], ry, fogColor, cam);
-        S.drawBox(VP, [top[0], top[1] + .055, top[2]], [.038, .055, .038], [1, .66, .13, .92], ry, fogColor, cam);
+// Persistent predator / fortification damage appears on visible block faces,
+// not just when the crosshair is placed over the voxel.
+S.renderBlockDamage=function renderBlockDamage(VP,fogColor,cam){
+    let drawn=0;
+    const visible=(key,id,ratio,hit)=>{
+        if(ratio<=.012 || drawn>52)return;
+        const [x,y,z]=key.split(',').map(Number);
+        if(Math.hypot(x+.5-cam[0],y+.5-cam[1],z+.5-cam[2])>23 || S.getBlock(x,y,z)!==id)return;
+        const visual=S.clamp(ratio,0,1),model=S.M4.multiply(S.M4.translation(x-.006,y-.006,z-.006),S.M4.scale(1.012,1.012,1.012));
+        S.gl.useProgram(S.colorProgram);
+        S.gl.uniformMatrix4fv(S.CL.mvp,false,S.M4.multiply(VP,model));
+        S.gl.uniform1f(S.CL.fog,0);
+        S.gl.uniform3fv(S.CL.fogColor,fogColor);
+        S.gl.uniform4fv(S.CL.color,new Float32Array(hit?[.11,.062,.041,.73]:[.052,.039,.030,.57]));
+        S.gl.bindBuffer(S.gl.ARRAY_BUFFER,S.crackBuffer);
+        S.gl.enableVertexAttribArray(S.CL.pos);
+        S.gl.vertexAttribPointer(S.CL.pos,3,S.gl.FLOAT,false,0,0);
+        const count=Math.ceil(visual*S.crackStages)*S.crackVertsPerStage;
+        S.gl.drawArrays(S.gl.TRIANGLES,0,count);drawn++;
+    };
+    for(const [key,f] of S.fortifications){
+        if(f.hp>=f.maxHp || !f.maxHp)continue;
+        const [x,y,z]=key.split(',').map(Number);
+        visible(key,S.getBlock(x,y,z),1-f.hp/f.maxHp,(performance.now()-f.lastHit)<240);
+        if(drawn>52)break;
     }
-    else if (def.tool) {
-        const wooden = def.tier === 'wood', golden = def.tier === 'gold', metal = wooden ? [.47, .31, .18, 1] : golden ? [.78, .58, .15, 1] : [.39, .42, .41, 1], handle = wooden ? [.34, .22, .13, 1] : [.31, .22, .14, 1];
-        S.drawBox(VP, base, [.034, .40, .034], handle, ry, fogColor, cam, rx, .22);
-        const head = [base[0] + dir[0] * .04, base[1] + .27, base[2] + dir[2] * .04];
-        if (def.tool === 'pickaxe') {
-            S.drawBox(VP, head, [.42, .085, .08], metal, ry, fogColor, cam, rx, .2);
-            S.drawBox(VP, S.rotatedOffset(head, [-.22, 0, 0], ry), [.10, .15, .07], metal, ry, fogColor, cam, rx, .2);
-        }
-        else if (def.tool === 'axe') {
-            S.drawBox(VP, head, [.30, .28, .075], metal, ry, fogColor, cam, rx, .2);
-            S.drawBox(VP, S.rotatedOffset(head, [.18, .03, 0], ry), [.17, .36, .055], metal, ry, fogColor, cam, rx, .2);
-        }
-        else if (def.tool === 'shovel') {
-            S.drawBox(VP, [head[0], head[1] + .03, head[2]], [.22, .29, .07], metal, ry, fogColor, cam, rx, .12);
-        }
-        else {
-            S.drawBox(VP, [head[0], head[1] + .08, head[2]], [.075, .62, .055], metal, ry, fogColor, cam, rx, .12);
-            S.drawBox(VP, S.rotatedOffset(base, [0, .20, 0], ry), [.23, .055, .055], handle, ry, fogColor, cam, rx, .1);
-        }
+    for(const [key,d] of S.enemyBlockDamage){
+        visible(key,d.id,1-d.hp/d.maxHp,S.worldSeconds-d.lastHit<.3);
+        if(drawn>52)break;
     }
-    else if (def.place) {
-        S.drawHeldTexturedBlock(VP, base, [.30, .30, .30], def.place, ry, rx, .12);
-    }
-    else if (id === 'berries') {
-        for (const [ox, oy] of [[-.06, .03], [.04, .07], [.08, -.02], [-.02, -.05]])
-            S.drawBox(VP, S.rotatedOffset(base, [ox, oy, 0], ry), [.055, .055, .055], [.20, .10, .28, 1], ry, fogColor, cam, rx, .12);
-        S.drawBox(VP, S.rotatedOffset(base, [0, .10, 0], ry), [.025, .08, .025], [.18, .30, .16, 1], ry, fogColor, cam, rx, .12);
-    }
-    else if (id === 'rawmeat' || id === 'cookedmeat') {
-        S.drawBox(VP, base, [.18, .11, .24], id === 'rawmeat' ? [.42, .14, .14, 1] : [.36, .22, .12, 1], ry, fogColor, cam, rx, .12);
-        S.drawBox(VP, S.rotatedOffset(base, [.09, .01, 0], ry), [.055, .06, .16], [.70, .60, .48, 1], ry, fogColor, cam, rx, .12);
-    }
-    else if (id === 'bandage') {
-        S.drawBox(VP, base, [.20, .09, .12], [.72, .72, .66, 1], ry, fogColor, cam, rx, .12);
-        S.drawBox(VP, base, [.08, .10, .13], [.30, .12, .12, 1], ry, fogColor, cam, rx, .12);
-    }
-    else if (['coal', 'iron', 'gold_ore', 'iron_ingot', 'gold_ingot'].includes(id)) {
-        const c = id === 'coal' ? [.08, .085, .08, 1] : id === 'iron' ? [.44, .30, .23, 1] : id === 'gold_ore' ? [.50, .39, .16, 1] : id === 'iron_ingot' ? [.58, .62, .60, 1] : [.76, .61, .18, 1];
-        S.drawBox(VP, base, [.13, .12, .15], c, ry, fogColor, cam, rx, .12);
-        S.drawBox(VP, S.rotatedOffset(base, [.06, .05, -.03], ry), [.045, .035, .05], [Math.min(1, c[0] * 1.35), Math.min(1, c[1] * 1.35), Math.min(1, c[2] * 1.35), 1], ry, fogColor, cam, rx, .12);
-    }
-    else {
-        S.drawBox(VP, base, [.11, .11, .11], [.32, .33, .31, 1], ry, fogColor, cam, rx, .12);
+    for(const [key,ratio] of S.fallenLogDamage || []){
+        const [x,y,z]=key.split(',').map(Number);
+        visible(key,S.getBlock(x,y,z),ratio,false);
+        if(drawn>52)break;
     }
 };
 
-S.renderOffhandItem = function renderOffhandItem(VP, fogColor, cam) {
-    const id = S.offhandItem();
-    if (!id)
-        return;
-    const def = S.itemDefs[id], dir = S.lookDir(), right = [Math.cos(S.player.yaw), 0, Math.sin(S.player.yaw)], bob = Math.sin(S.player.movePhase) * .018, base = [cam[0] + dir[0] * .68 - right[0] * .42, cam[1] - .42 + bob, cam[2] + dir[2] * .68 - right[2] * .42], ry = S.player.yaw - .08, rx = -.12 - S.player.pitch * .22;
-    S.drawBox(VP, [base[0] + right[0] * .08, base[1] - .23, base[2] + right[2] * .08], [.08, .28, .08], [.16, .105, .072, 1], ry, fogColor, cam, rx + .18, -.1);
-    if (id === 'torch') {
-        S.drawBox(VP, base, [.03, .34, .03], [.24, .145, .07, 1], ry, fogColor, cam, rx, -.1);
-        const top = [base[0], base[1] + .22, base[2]];
-        S.drawBox(VP, top, [.06, .07, .06], [.72, .27, .05, 1], ry, fogColor, cam);
-        S.drawBox(VP, [top[0], top[1] + .06, top[2]], [.035, .06, .035], [1, .72, .18, .96], ry, fogColor, cam);
-    }
-    else if (def?.tool) {
-        const wooden = def.tier === 'wood', golden = def.tier === 'gold', headCol = wooden ? [.47, .31, .18, 1] : golden ? [.78, .58, .15, 1] : [.40, .43, .42, 1], handle = wooden ? [.35, .23, .14, 1] : [.31, .22, .14, 1];
-        S.drawBox(VP, base, [.03, .32, .03], handle, ry, fogColor, cam, rx, -.14);
-        const h = S.rotatedOffset(base, [0, .23, 0], ry);
-        if (def.tool === 'pickaxe')
-            S.drawBox(VP, h, [.31, .07, .07], headCol, ry, fogColor, cam, rx, -.14);
-        else if (def.tool === 'axe')
-            S.drawBox(VP, h, [.22, .23, .07], headCol, ry, fogColor, cam, rx, -.14);
-        else if (def.tool === 'shovel')
-            S.drawBox(VP, h, [.16, .22, .065], headCol, ry, fogColor, cam, rx, -.14);
-        else
-            S.drawBox(VP, h, [.065, .48, .05], headCol, ry, fogColor, cam, rx, -.14);
-    }
-    else if (def?.place) {
-        S.drawHeldTexturedBlock(VP, base, [.27, .27, .27], def.place, ry, rx, -.1);
-    }
-    else if (id === 'rawmeat' || id === 'cookedmeat')
-        S.drawBox(VP, base, [.15, .09, .20], id === 'rawmeat' ? [.42, .14, .14, 1] : [.36, .22, .12, 1], ry, fogColor, cam, rx, -.1);
-    else if (id === 'berries') {
-        for (const ox of [-.05, .03, .08])
-            S.drawBox(VP, S.rotatedOffset(base, [ox, Math.abs(ox) * .45, 0], ry), [.05, .05, .05], [.20, .10, .28, 1], ry, fogColor, cam, rx, -.1);
-    }
-    else if (id === 'bandage')
-        S.drawBox(VP, base, [.18, .08, .11], [.72, .72, .66, 1], ry, fogColor, cam, rx, -.1);
-    else
-        S.drawBox(VP, base, [.11, .11, .11], [.34, .31, .27, 1], ry, fogColor, cam, rx, -.1);
+S.renderHeldItem = function renderHeldItem(VP,fogColor,cam){
+  const id=S.selectedItem(),def=S.itemDefs[id];
+  if(!def||S.countItem(id)<=0)return;
+  const look=S.lookDir(),right=[Math.cos(S.player.yaw),0,Math.sin(S.player.yaw)];
+  const swing=Math.sin(S.clamp(S.player.toolSwing,0,1)*Math.PI),walk=Math.sin(S.player.movePhase)*.025;
+  const sway=S.player.sway||0;
+  const origin=[cam[0]+look[0]*.89+right[0]*(.36+sway*.11),cam[1]-.43+walk-swing*.12,cam[2]+look[2]*.89+right[2]*(.36+sway*.11)];
+  const yaw=S.player.yaw-.17+swing*.21*S.player.toolSwingSide,pitch=-.23-S.player.pitch*.28+swing*.52,roll=-.19+swing*.18;
+  const grip=[origin[0]-right[0]*.026,origin[1]-.22,origin[2]-right[2]*.026];
+  S.drawBox(VP,grip,[.14,.30,.15],[.21,.15,.105,1],yaw,fogColor,cam,pitch,roll);
+  S.drawBox(VP,[origin[0],origin[1]-.018,origin[2]],[.125,.126,.128],[.46,.31,.22,1],yaw,fogColor,cam,pitch,roll);
+  if(S.drawEquipmentModel(VP,origin,yaw,pitch,roll,id,fogColor,cam,1))return;
+  if(def.place){S.drawHeldTexturedBlock(VP,origin,[.29,.29,.29],def.place,yaw,pitch,roll);return;}
+  if(id==='berries'){
+    for(const [ox,oy]of [[-.07,.03],[.04,.07],[.085,-.03],[-.02,-.04]])
+      S.drawBox(VP,S.rotatedOffset(origin,[ox,oy,0],yaw),[.057,.057,.06],[.27,.11,.25,1],yaw,fogColor,cam,pitch);
+  } else if(id==='rawmeat'||id==='cookedmeat'){
+    S.drawBox(VP,origin,[.19,.13,.23],id==='rawmeat'?[.46,.15,.16,1]:[.36,.24,.14,1],yaw,fogColor,cam,pitch);
+  } else S.drawBox(VP,origin,[.14,.15,.13],[.33,.33,.31,1],yaw,fogColor,cam,pitch);
 };
 
-S.renderPlacedTorches = function renderPlacedTorches(VP, fogColor, cam) { let n = 0; for (const [k, v] of S.edits) {
-    if (v !== S.B.TORCH)
-        continue;
-    const [x, y, z] = k.split(',').map(Number);
-    if (Math.hypot(x + .5 - S.player.pos[0], z + .5 - S.player.pos[2]) > Math.min(46, S.renderDistance * S.CHUNK))
-        continue;
-    const flick = .85 + .15 * Math.sin(performance.now() * .017 + x * 2.1 + z);
-    S.drawBox(VP, [x + .5, y + .28, z + .5], [.055, .52, .055], [.30, .19, .09, 1], 0, fogColor, cam, 0, .04);
-    S.drawBox(VP, [x + .5, y + .62, z + .5], [.095, .12, .095], [.72 * flick, .25, .04, 1], 0, fogColor, cam);
-    S.drawBox(VP, [x + .5, y + .73, z + .5], [.055, .13, .055], [1, .66 * flick, .12, .90], 0, fogColor, cam);
-    if (++n > 80)
-        break;
-} };
+S.renderOffhandItem = function renderOffhandItem(VP,fogColor,cam){
+ const id=S.offhandItem();if(!id)return;
+ const def=S.itemDefs[id];if(!def)return;
+ const look=S.lookDir(),right=[Math.cos(S.player.yaw),0,Math.sin(S.player.yaw)];
+ const bob=Math.sin(S.player.movePhase)*.019;
+ const origin=[cam[0]+look[0]*.70-right[0]*.40,cam[1]-.45+bob,cam[2]+look[2]*.70-right[2]*.40];
+ const yaw=S.player.yaw+.19,pitch=-.18-S.player.pitch*.24;
+ S.drawBox(VP,[origin[0]+right[0]*.04,origin[1]-.23,origin[2]+right[2]*.04],[.14,.31,.15],[.23,.16,.115,1],yaw,fogColor,cam,pitch,-.15);
+ if(S.drawEquipmentModel(VP,origin,yaw,pitch,-.1,id,fogColor,cam,.87))return;
+ if(def.place){S.drawHeldTexturedBlock(VP,origin,[.265,.265,.265],def.place,yaw,pitch,-.1);return;}
+ S.drawBox(VP,origin,[.14,.12,.15],[.34,.31,.27,1],yaw,fogColor,cam,pitch,-.10);
+};
+
+// Campfires are bespoke low-poly assemblies; no full voxel cube. Ember
+// flicker and smoke are rendered as inexpensive colored boxes/particles.
+S.renderCampfires = function renderCampfires(VP,fogColor,cam){
+    let shown=0;
+    const t=performance.now()*.001;
+    for(const [key,id] of S.edits){
+        if(id!==S.B.CAMPFIRE)continue;
+        const [x,y,z]=key.split(',').map(Number);
+        if(Math.hypot(x+.5-cam[0],z+.5-cam[2])>42)continue;
+        const pos=[x+.5,y+.06,z+.5],f=.85+.15*Math.sin(t*9+x*3+z);
+        for(const a of [0,Math.PI/3,2*Math.PI/3]){
+            const angle=a+Math.PI/4;
+            S.drawBox(VP,[pos[0],pos[1]+.14,pos[2]],[.95,.17,.16],[.25,.13,.075,1],angle,fogColor,cam);
+            S.drawBox(VP,[pos[0],pos[1]+.16,pos[2]],[.85,.08,.075],[.48,.28,.13,1],angle,fogColor,cam);
+        }
+        for(let k=0;k<9;k++){
+            const a=k*Math.PI*2/9;
+            S.drawBox(VP,[pos[0]+Math.cos(a)*.51,pos[1]+.04,pos[2]+Math.sin(a)*.51],[.22,.17,.23],k%2?[.37,.35,.30,1]:[.22,.23,.22,1],a,fogColor,cam);
+        }
+        const flameY=pos[1]+.35+.07*Math.sin(t*11+x+z);
+        S.drawBox(VP,[pos[0],flameY,pos[2]],[.27,.60*f,.22],[.95,.37,.08,.92],t*.15,fogColor,cam);
+        S.drawBox(VP,[pos[0],flameY+.10,pos[2]],[.15,.40*f,.15],[1,.73,.24,.89],-t*.21,fogColor,cam);
+        S.drawBox(VP,[pos[0],flameY+.20,pos[2]],[.065,.20*f,.065],[1,.92,.57,.83],0,fogColor,cam);
+        if(++shown>=36)break;
+    }
+};
+S.updateCampfires=function updateCampfires(dt){
+    S.campfireEffectBudget=(S.campfireEffectBudget||0)+dt;
+    if(S.campfireEffectBudget<.13)return;
+    S.campfireEffectBudget=0;
+    let n=0;
+    for(const [key,id] of S.edits){
+        if(id!==S.B.CAMPFIRE)continue;
+        const [x,y,z]=key.split(',').map(Number);
+        if(Math.hypot(x-S.player.pos[0],z-S.player.pos[2])>27)continue;
+        const fire=Math.random()>.45;
+        S.spawnParticle([x+.5+(Math.random()-.5)*.25,y+.48,z+.5+(Math.random()-.5)*.25],[(Math.random()-.5)*.33,fire?1.35:.65,(Math.random()-.5)*.33],fire?.45:1.6,fire?[1,.47,.10,.84]:[.21,.23,.22,.32],fire?3.5:6.8,fire?1.3:.05,.40);
+        if(++n>=12)break;
+    }
+    // Quiet local crackle: event frequency is independent from particle count,
+    // faded with distance and never loops on every rendered frame.
+    S.campfireSoundDelay=(S.campfireSoundDelay||0)-dt;
+    if(n>0 && S.campfireSoundDelay<=0){
+        S.campfireSoundDelay=2.4+Math.random()*2.0;
+        S.sfx('fire',.20);
+    }
+};
+S.renderPlacedTorches = function renderPlacedTorches(VP,fogColor,cam) {
+    let n=0;
+    for(const [key,id] of S.edits){
+        if(id!==S.B.TORCH)continue;
+        const [x,y,z]=key.split(',').map(Number);
+        if(Math.hypot(x+.5-S.player.pos[0],z+.5-S.player.pos[2])>Math.min(55,S.renderDistance*S.CHUNK))continue;
+        const normal=S.torchMounts?.get(key)||[0,1,0];
+        const side=normal[1]===0;
+        const nx=normal[0]||0,nz=normal[2]||0;
+        const foot=[x+.5-nx*.36,y+(side?.29:.18),z+.5-nz*.36];
+        const head=[foot[0]+nx*(side?.25:0),foot[1]+(side?.45:.54),foot[2]+nz*(side?.25:0)];
+        const mid=foot.map((v,i)=>(v+head[i])*.5);
+        // Align the real shaft rotation with the wall normal: the stick must
+        // lean AWAY from the supporting wall, toward its own flame/head.
+        const angle=.40,rx=nz*angle,rz=-nx*angle;
+        const flick=.85+.15*Math.sin(performance.now()*.017+x*2.1+z);
+        // Lower base physically contacts the supporting face; shaft follows a lean.
+        S.drawBox(VP,mid,[.067,side?.59:.55,.067],[.30,.20,.11,1],0,fogColor,cam,rx,rz);
+        S.drawBox(VP,head,[.088,.12,.088],[.74*flick,.30,.075,1],0,fogColor,cam);
+        S.drawBox(VP,[head[0],head[1]+.09,head[2]],[.055,.13,.055],[1,.69*flick,.19,.92],0,fogColor,cam);
+        if(++n>110)break;
+    }
+};
 
 S.droppedItemColor = function droppedItemColor(id) { if (id === 'coal')
     return [.08, .085, .08, 1]; if (id === 'iron' || id === 'iron_ingot')
@@ -430,7 +534,9 @@ S.renderDroppedItems = function renderDroppedItems(VP, fogColor, cam) {
         if (S.dist3(d.pos, S.player.pos) > Math.min(42, S.renderDistance * S.CHUNK))
             continue;
         const bob = Math.sin(d.age * 3.6 + d.bob) * .055, pos = [d.pos[0], d.pos[1] + bob, d.pos[2]], def = S.itemDefs[d.id] || {}, ry = d.spin;
-        if (def.place && def.place !== S.B.TORCH)
+        if (def.place === S.B.CAMPFIRE)
+            S.drawEquipmentModel(VP,pos,ry,.16,.10,'campfire',fogColor,cam,.56);
+        else if (def.place && def.place !== S.B.TORCH)
             S.drawHeldTexturedBlock(VP, pos, [.23, .23, .23], def.place, ry, .10, 0);
         else if (def.place === S.B.TORCH) {
             S.drawBox(VP, pos, [.032, .22, .032], [.29, .18, .09, 1], ry, fogColor, cam, .12, .06);
@@ -460,7 +566,7 @@ S.torchCacheTimer = 0;
 S.cachedTorch = null;
 
 S.nearestPlacedTorch = function nearestPlacedTorch() { let best = null, bd = 999; for (const [k, v] of S.edits) {
-    if (v !== S.B.TORCH)
+    if (v !== S.B.TORCH && v !== S.B.CAMPFIRE)
         continue;
     const [x, y, z] = k.split(',').map(Number), d = Math.hypot(x + .5 - S.player.pos[0], y + .5 - (S.player.pos[1] + 1), z + .5 - S.player.pos[2]);
     if (d < bd && d < Math.min(14, S.renderDistance * S.CHUNK)) {
@@ -529,13 +635,50 @@ S.renderConstructions = function renderConstructions(VP, fogColor, cam) {
     // visible reinforcement bands/corner plates so every tier is readable.
     let overlays = 0;
     for (const [k, f] of S.fortifications) {
-        if (f.tier < 1)
+        if (!f.family && f.tier < 1)
             continue;
         const [x, y, z] = k.split(',').map(Number), id = S.getBlock(x, y, z);
         if (id === S.B.WOOD_DOOR || id === S.B.WOOD_STAIRS || id === S.B.WOOD_FENCE || !S.isUpgradeableBlockId(id))
             continue;
         if (Math.hypot(x + .5 - S.player.pos[0], z + .5 - S.player.pos[2]) > Math.min(48, S.renderDistance * S.CHUNK + 4))
             continue;
+        // Four families of reinforced walls, each with a readable visual progression.
+        // The actual solid block belongs to the chunk mesh; details are overlaid,
+        // avoiding remeshing when upgrading an individual voxel.
+        if (f.family) {
+            const family=S.WALL_FAMILIES.get(f.family), tier=S.clamp(f.level||0,0,3);
+            const metal=family.tint==='iron', wood=family.tint==='wood';
+            const base=metal?[.45,.52,.54,1]:wood?[.40,.25,.13,1]:family.tint==='cobble'?[.40,.40,.38,1]:[.45,.47,.44,1];
+            const band=metal?[.68,.75,.77,1]:wood?[.54,.37,.19,1]:[.56,.59,.56,1];
+            const edge=metal?[.12,.17,.19,1]:wood?[.15,.09,.052,1]:[.20,.22,.21,1];
+            const pz=z+.009, nz=z+.991;
+            // Even freshly crafted L0 walls have bolted corners and face grooves.
+            for(const face of [pz,nz]) {
+                for(const xx of [.13,.87]) {
+                    S.drawBox(VP,[x+xx,y+.5,face],[.074,.93,.046],edge,0,fogColor,cam);
+                    for(const yy of [.16,.84])
+                        S.drawBox(VP,[x+xx,y+yy,face+(face===pz?-.023:.023)],[.082,.078,.044],band,0,fogColor,cam);
+                }
+                if(tier>=1){
+                    for(const yy of [.20,.79])
+                        S.drawBox(VP,[x+.5,y+yy,face],[.92,.092,.059],band,0,fogColor,cam);
+                }
+                if(tier>=2){
+                    // Structural X-bracing; the sides are placed slightly beyond
+                    // the block faces so they cannot z-fight with voxel textures.
+                    S.drawBox(VP,[x+.5,y+.49,face],[.078,1.15,.071],edge,0,fogColor,cam,0,.70);
+                    S.drawBox(VP,[x+.5,y+.49,face],[.078,1.15,.071],edge,0,fogColor,cam,0,-.70);
+                }
+                if(tier>=3){
+                    S.drawBox(VP,[x+.5,y+.5,face],[.23,.23,.082],base,0,fogColor,cam);
+                    S.drawBox(VP,[x+.5,y+.5,face+(face===pz?-.049:.049)],[.11,.11,.035],band,0,fogColor,cam);
+                    for(const xx of [.30,.70])for(const yy of [.33,.67])
+                        S.drawBox(VP,[x+xx,y+yy,face+(face===pz?-.035:.035)],[.08,.08,.05],band,0,fogColor,cam);
+                }
+            }
+            if(++overlays>100)break;
+            continue;
+        }
         const band = f.tier === 5 ? [.58, .61, .59, 1] : f.tier === 4 ? [.43, .44, .41, 1] : f.tier >= 2 ? [.34, .35, .33, 1] : [.49, .33, .18, 1], c = .048;
         S.drawBox(VP, [x + .5, y + .12, z + .018], [.92, .07, c], band, 0, fogColor, cam);
         S.drawBox(VP, [x + .5, y + .88, z + .018], [.92, .07, c], band, 0, fogColor, cam);
@@ -565,12 +708,43 @@ S.renderConstructions = function renderConstructions(VP, fogColor, cam) {
     }
 };
 
+
+S.renderFallingTrees = function renderFallingTrees(VP,fogColor,cam){
+  // The entire captured natural tree rotates as a rigid body around its root.
+  // Neither terrain nor neighbouring trees participate in the fall collision.
+  for(const tree of S.fallingTrees||[]){
+    const [bx,by,bz]=tree.root,ca=Math.cos(tree.angle),sa=Math.sin(tree.angle),dx=tree.dx,dz=tree.dz;
+    const ry=Math.atan2(dx,dz);
+    const point=(x,y,z)=>{
+      const vx=x-bx,vy=y-by,vz=z-bz;
+      const ax=dz,az=-dx,dot=ax*vx+az*vz;
+      const crossx=-az*vy,crossy=az*vx-ax*vz,crossz=ax*vy;
+      const f=1-ca;
+      return [bx+.5+vx*ca+crossx*sa+ax*dot*f,by+.5+vy*ca+crossy*sa,bz+.5+vz*ca+crossz*sa+az*dot*f];
+    };
+    for(const [x,y,z,id]of tree.logs){
+      S.drawHeldTexturedBlock(VP,point(x,y,z),[.99,.99,.99],id,ry,tree.angle);
+    }
+    for(let i=0;i<tree.leaves.length;i+=Math.max(1,Math.floor(tree.leaves.length/100))){
+      const [x,y,z,id]=tree.leaves[i];
+      S.drawHeldTexturedBlock(VP,point(x,y,z),[.97,.97,.97],id,ry,tree.angle);
+    }
+  }
+};
+
 S.render = function render() {
     S.resize();
     S.gl.enable(S.gl.DEPTH_TEST);
     S.gl.enable(S.gl.CULL_FACE);
     S.gl.cullFace(S.gl.BACK);
     S.gl.depthFunc(S.gl.LEQUAL);
+    // The main menu is an independent, non-persistent voxel scene. Never
+    // interrogate the active world before a player has loaded a save.
+    if (!S.running) {
+        S.renderMainMenuBackdrop?.();
+        return;
+    }
+    S.updateSunShadows?.(1 / 60);
     const day = S.sunLevel(), night = 1 - day, lf = S.lightning * .62, biome = S.biomeAt(Math.floor(S.player.pos[0]), Math.floor(S.player.pos[2]));
     let sky = [S.lerp(.005, .22, day) + lf, S.lerp(.008, .29, day) + lf, S.lerp(.010, .33, day) + lf];
     if (biome === 'swamp') {
@@ -579,17 +753,19 @@ S.render = function render() {
     }
     if (S.weatherMode === 'rain' || S.weatherMode === 'mist')
         sky = sky.map(v => v * .78);
-    if (S.player.inWater)
+    // Water color is a CAMERA effect, not a swimming/movement effect.
+    // Near the waterline the view returns to normal as soon as eyes emerge.
+    const cam = S.cameraEyePos();
+    const cameraUnderwater = S.getBlock(Math.floor(cam[0]),Math.floor(cam[1]+.075),Math.floor(cam[2]))===S.B.WATER;
+    if (cameraUnderwater)
         sky = [.018, .092, .105];
-    let fogColor = S.player.inWater ? [.018, .102, .112] : [sky[0] * .67, sky[1] * .71, sky[2] * .69];
+    let fogColor = cameraUnderwater ? [.018, .102, .112] : [sky[0] * .67, sky[1] * .71, sky[2] * .69];
     S.gl.clearColor(sky[0], sky[1], sky[2], 1);
     S.gl.clear(S.gl.COLOR_BUFFER_BIT | S.gl.DEPTH_BUFFER_BIT);
-    if (!S.running)
-        return;
-    const cam = S.cameraEyePos(), dir = S.lookDir(), target = [cam[0] + dir[0], cam[1] + dir[1], cam[2] + dir[2]], speed = Math.hypot(S.player.vel[0], S.player.vel[2]), fov = Math.PI / 3 + S.clamp((speed - 5) * .014, 0, .07), proj = S.M4.perspective(fov, S.canvas.width / S.canvas.height, .055, S.renderDistance * S.CHUNK + 35), view = S.M4.lookAt(cam, target), VP = S.M4.multiply(proj, view);
+    const dir = S.lookDir(), target = S.cameraMode === 2 ? [S.player.pos[0], S.player.pos[1]+1.15, S.player.pos[2]] : [cam[0] + dir[0], cam[1] + dir[1], cam[2] + dir[2]], speed = Math.hypot(S.player.vel[0], S.player.vel[2]), fov = Math.PI / 3 + S.clamp((speed - 5) * .014, 0, .07), proj = S.M4.perspective(fov, S.canvas.width / S.canvas.height, .055, S.renderDistance * S.CHUNK + 35), view = S.M4.lookAt(cam, target), VP = S.M4.multiply(proj, view);
     S.lastVP = VP;
     let fogNear = Math.max(7, S.renderDistance * S.CHUNK * (S.weatherMode === 'mist' ? .21 : .34)), fogFar = S.renderDistance * S.CHUNK * (S.weatherMode === 'mist' ? .72 : .95);
-    if (S.player.inWater) {
+    if (cameraUnderwater) {
         fogNear = 1.5;
         fogFar = 20;
     }
@@ -606,11 +782,21 @@ S.render = function render() {
     }
     S.gl.disable(S.gl.BLEND);
     S.renderCloudLayer(VP, fogColor, cam, day);
-    for (const c of S.chunks.values())
+    const visibleChunk = c => {
+        const dx=(c.cx+.5)*S.CHUNK-cam[0],dz=(c.cz+.5)*S.CHUNK-cam[2];
+        const d=Math.hypot(dx,dz);
+        if(d<31)return true;
+        return (dx*dir[0]+dz*dir[2])/Math.max(.01,d)>-.30;
+    };
+    for (const c of S.chunks.values())if(visibleChunk(c))
         S.drawVoxelMesh(c.opaque, 1, VP, cam, fogColor, fogNear, fogFar, S.clamp(day + S.lightning, 0, 1), torchPos, torchPower, 0);
+    S.renderFallingTrees(VP,fogColor,cam);
     S.renderPlacedTorches(VP, fogColor, cam);
+    S.renderCampfires(VP,fogColor,cam);
     S.renderConstructions(VP, fogColor, cam);
     S.renderBedrolls(VP, fogColor, cam);
+    if (S.cameraMode) S.renderPlayerAvatar(VP, fogColor, cam);
+    S.renderRemotePlayers?.(VP,fogColor,cam);
     S.gl.enable(S.gl.BLEND);
     S.gl.blendFunc(S.gl.SRC_ALPHA, S.gl.ONE_MINUS_SRC_ALPHA);
     S.gl.depthMask(false);
@@ -627,12 +813,13 @@ S.render = function render() {
     S.gl.enable(S.gl.BLEND);
     S.gl.blendFunc(S.gl.SRC_ALPHA, S.gl.ONE_MINUS_SRC_ALPHA);
     S.gl.depthMask(false);
-    for (const c of S.chunks.values())
+    for (const c of S.chunks.values())if(visibleChunk(c))
         S.drawVoxelMesh(c.water, .68, VP, cam, fogColor, fogNear, fogFar, S.clamp(day + S.lightning, 0, 1), torchPos, torchPower, 1);
     S.renderParticles(VP);
     S.renderRain(VP);
     S.renderScanHighlights(VP, fogColor, cam);
     S.renderTargetOutline(VP, fogColor, cam);
+    S.renderBlockDamage(VP, fogColor, cam);
     S.gl.depthMask(true);
     S.gl.disable(S.gl.BLEND);
     S.gl.clear(S.gl.DEPTH_BUFFER_BIT);

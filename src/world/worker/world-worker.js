@@ -14,7 +14,7 @@ self.onmessage=({data:m})=>{
     if(m.type==='init'){
       generation=m.token;
       if(!ready){ S.GAME_DATA=m.gameData;registry(S);worldgen(S);ready=true; }
-      S.worldSeed=m.seed>>>0;
+      S.worldSeed=m.seed>>>0; S.worldgenVersion=m.worldgenVersion||16;
       S.chunks.clear();S.edits.clear();S.dirtyChunks.clear();
       self.postMessage({type:'ready',token:generation,backend:'js-parity'});
     } else if(m.type==='generate'&&ready&&m.token===generation){

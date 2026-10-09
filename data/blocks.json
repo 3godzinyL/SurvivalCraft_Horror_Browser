@@ -89,7 +89,12 @@
     "WOOD_DOOR": 86,
     "WOOD_STAIRS": 87,
     "WOOD_FENCE": 88,
-    "BEDROLL": 89
+    "BEDROLL": 89,
+    "REINFORCED_WOOD": 90,
+    "REINFORCED_COBBLE": 91,
+    "REINFORCED_STONE": 92,
+    "REINFORCED_IRON": 93,
+    "CAMPFIRE": 94
   },
   "definitions": {
     "0": {
@@ -732,6 +737,46 @@
       "hard": 0.48,
       "drop": "bedroll",
       "material": "plank"
+    },
+    "90": {
+      "solid": true,
+      "hard": 1.9,
+      "drop": "reinforced_wood",
+      "tool": "axe",
+      "material": "wood",
+      "construction": "reinforced_wall"
+    },
+    "91": {
+      "solid": true,
+      "hard": 2.9,
+      "drop": "reinforced_cobble",
+      "tool": "pickaxe",
+      "material": "stone",
+      "construction": "reinforced_wall"
+    },
+    "92": {
+      "solid": true,
+      "hard": 3.5,
+      "drop": "reinforced_stone",
+      "tool": "pickaxe",
+      "material": "stone",
+      "construction": "reinforced_wall"
+    },
+    "93": {
+      "solid": true,
+      "hard": 5.0,
+      "drop": "reinforced_iron",
+      "tool": "pickaxe",
+      "material": "metal",
+      "construction": "reinforced_wall"
+    },
+    "94": {
+      "solid": false,
+      "transparent": true,
+      "decor": true,
+      "hard": 0.65,
+      "drop": "campfire",
+      "material": "wood"
     }
   },
   "textureNames": {
@@ -838,7 +883,12 @@
     "85": "tile_093",
     "86": "tile_094",
     "87": "tile_095",
-    "88": "tile_096"
+    "88": "tile_096",
+    "90": "tile_010",
+    "91": "tile_044",
+    "92": "tile_003",
+    "93": "tile_008",
+    "94": "tile_010"
   },
   "atlasNames": {
     "0": "tile_000",
@@ -1058,6 +1108,11 @@
     "85": 93,
     "86": 94,
     "87": 95,
-    "88": 96
+    "88": 96,
+    "90": 10,
+    "91": 44,
+    "92": 3,
+    "93": 8,
+    "94": 10
   }
 }

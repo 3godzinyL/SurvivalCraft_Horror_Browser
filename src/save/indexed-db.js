@@ -1,5 +1,8 @@
 import { migrateSave } from './migrations.js';
-const DB='nightcraft-worlds',STORE='saves',KEY='main', LEGACY=['nightcraft-cold-forest-save-v19','nightcraft-cold-forest-save-v18','nightcraft-cold-forest-save-v17','nightcraft-cold-forest-save-v16','nightcraft-cold-forest-save-v15','nightcraft-cold-forest-save-v14','nightcraft-cold-forest-save-v13','nightcraft-cold-forest-save-v12','nightcraft-cold-forest-save-v11','nightcraft-cold-forest-save-v10','nightcraft-cold-forest-save-v9','nightcraft-cold-forest-save-v8','nightcraft-cold-forest-save-v7','nightcraft-cold-forest-save-v6','nightcraft-cold-forest-save-v5','nightcraft-cold-forest-save-v4','nightcraft-the-hunt-save-v3'];
+// Project sites share the same github.io origin: scope the save key to the app's path.
+// Root-hosted/local installs intentionally retain the historic 'main' key.
+const APP_PATH=new URL('../../',import.meta.url).pathname;
+const DB='nightcraft-worlds',STORE='saves',KEY=APP_PATH==='/'?'main':'main@'+APP_PATH, LEGACY=['nightcraft-cold-forest-save-v19','nightcraft-cold-forest-save-v18','nightcraft-cold-forest-save-v17','nightcraft-cold-forest-save-v16','nightcraft-cold-forest-save-v15','nightcraft-cold-forest-save-v14','nightcraft-cold-forest-save-v13','nightcraft-cold-forest-save-v12','nightcraft-cold-forest-save-v11','nightcraft-cold-forest-save-v10','nightcraft-cold-forest-save-v9','nightcraft-cold-forest-save-v8','nightcraft-cold-forest-save-v7','nightcraft-cold-forest-save-v6','nightcraft-cold-forest-save-v5','nightcraft-cold-forest-save-v4','nightcraft-the-hunt-save-v3'];
 let dbPromise=null, queue=Promise.resolve();
 function openDb(){
   if(!('indexedDB' in globalThis))return Promise.reject(Error('IndexedDB unavailable'));

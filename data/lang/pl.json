@@ -89,7 +89,12 @@
     "86": "Drewniane drzwi",
     "87": "Drewniane schodki",
     "88": "Drewniane ogrodzenie",
-    "89": "Śpiwór ekspedycyjny"
+    "89": "Śpiwór ekspedycyjny",
+    "90": "Ściana z utwardzonego drewna",
+    "91": "Ściana z utwardzonego bruku",
+    "92": "Ściana z utwardzonego kamienia",
+    "93": "Ściana z utwardzonego żelaza",
+    "94": "Ognisko"
   },
   "items": {
     "dirt": "Ziemia",
@@ -199,7 +204,19 @@
     "iron_head": "Żelazna czapka",
     "iron_chest": "Żelazna zbroja",
     "iron_legs": "Żelazna nogawice",
-    "iron_feet": "Żelazna buty"
+    "iron_feet": "Żelazna buty",
+    "reinforced_wood": "Ściana z utwardzonego drewna",
+    "reinforced_cobble": "Ściana z utwardzonego bruku",
+    "reinforced_stone": "Ściana z utwardzonego kamienia",
+    "reinforced_iron": "Ściana z utwardzonego żelaza",
+    "plant_fiber": "Włókna roślinne",
+    "field_herbs": "Zioła polne",
+    "moonflower": "Kwiat księżycowy",
+    "blood_petal": "Krwawy płatek",
+    "forest_poultice": "Leśny okład",
+    "healing_wrap": "Ziołowy opatrunek",
+    "hunter_salve": "Maść tropiciela",
+    "campfire": "Ognisko"
   },
   "mobs": {
     "wolf": "wilk popielny",
@@ -217,7 +234,10 @@
     "bear": "czarny niedźwiedź",
     "crawler": "pełzacz",
     "watcher": "obserwator",
-    "wraith": "głodny cień"
+    "wraith": "głodny cień",
+    "night_moth": "nocny zwiadowca",
+    "night_harrier": "nocny łowca",
+    "hollowed": "Wydrążony"
   },
   "birds": {
     "raven": "kruk",
@@ -261,6 +281,15 @@
     "33": "Żelazny hełm",
     "34": "Żelazny pancerz",
     "35": "Żelazne nogawice",
-    "36": "Żelazne buty"
+    "36": "Żelazne buty",
+    "37": "Ściana z utwardzonego drewna",
+    "38": "Ściana z utwardzonego bruku",
+    "39": "Ściana z utwardzonego kamienia",
+    "40": "Ściana z utwardzonego żelaza",
+    "41": "Leśny okład (2×)",
+    "42": "Ziołowy opatrunek",
+    "43": "Maść tropiciela",
+    "44": "Bandaż z włókien (2×)",
+    "45": "Ognisko"
   }
 }

@@ -12,4 +12,6 @@ function walk(dir){for(const e of fs.readdirSync(dir,{withFileTypes:true})){
 for(const dir of ['src','tools','tests'])walk(path.join(root,dir));
 const server=spawnSync(process.execPath,['--check',path.join(root,'server.cjs')],{encoding:'utf8'});
 if(server.status!==0)throw Error(server.stderr);tested++;
+const multiplayerServer=spawnSync(process.execPath,['--check',path.join(root,'multiplayer/server.cjs')],{encoding:'utf8'});
+if(multiplayerServer.status!==0)throw Error(multiplayerServer.stderr);tested++;
 console.log('SOURCE_SYNTAX_PASS',tested,'modules and server');

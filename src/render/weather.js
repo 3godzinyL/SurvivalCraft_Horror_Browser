@@ -147,14 +147,17 @@ S.updatePlayer = function updatePlayer(dt, night) {
     S.player.vel[0] = S.lerp(S.player.vel[0], vx, S.clamp(accel * dt, 0, 1));
     S.player.vel[2] = S.lerp(S.player.vel[2], vz, S.clamp(accel * dt, 0, 1));
     if (S.player.inWater) {
+        // Old Minecraft-style swimming: Space to rise, Shift to dive.
+        // Neutral buoyancy at the surface, gentle sinking while submerged.
+        // Never inject a permanent upward acceleration (old surface pogo bug).
         const submerged = head === S.B.WATER;
-        const sink = submerged ? 6.1 : 10.0;
-        S.player.vel[1] += sink * dt;
-        if (S.input.keys.has('Space'))
-            S.player.vel[1] += (submerged ? 8 : 13) * dt;
-        if (!submerged && S.input.keys.has('Space'))
-            S.player.vel[1] = Math.max(S.player.vel[1], 2.8);
-        S.player.vel[1] = S.clamp(S.player.vel[1] * Math.exp(-3.6 * dt), -3.2, 4.6);
+        const up = S.input.keys.has('Space');
+        const down = S.input.keys.has('ShiftLeft') || S.input.keys.has('ShiftRight');
+        const desiredVy = up ? (submerged ? 2.3 : .95) : down ? -2.5 : (submerged ? -.48 : -.22);
+        S.player.vel[1] = S.lerp(S.player.vel[1], desiredVy, S.clamp(dt * 6, 0, 1));
+        if (submerged && iz > 0 && S.player.pitch < -.30)
+            S.player.vel[1] += Math.min(.8, -S.player.pitch * .55) * dt;
+        S.player.vel[1] = S.clamp(S.player.vel[1], -2.8, 2.7);
         S.player.swimSound -= dt;
         if ((Math.hypot(S.player.vel[0], S.player.vel[2]) > 1 || S.input.keys.has('Space')) && S.player.swimSound <= 0) {
             S.sfx('swim', .7);
@@ -166,7 +169,7 @@ S.updatePlayer = function updatePlayer(dt, night) {
         S.player.vel[1] -= 19.2 * dt;
         S.player.swimSound = 0;
     }
-    S.player.grounded = S.playerGroundedAt();
+    S.player.grounded = !S.player.inWater && S.playerGroundedAt();
     S.player.coyote = S.player.grounded ? .12 : Math.max(0, (S.player.coyote || 0) - dt);
     const jumpDown = S.input.keys.has('Space');
     if (jumpDown && !S.player.jumpHeld && !S.player.inWater)
@@ -192,7 +195,7 @@ S.updatePlayer = function updatePlayer(dt, night) {
     if (travelled < 2.5)
         S.player.distanceWalked = (S.player.distanceWalked || 0) + travelled;
     const nowGround = S.playerGroundedAt();
-    if (nowGround && preVy < 0) {
+    if (!S.player.inWater && nowGround && preVy < 0) {
         if (preVy < -11.5)
             S.hurtPlayer(Math.min(55, (Math.abs(preVy) - 10.5) * 5), 'upadek');
         if (preVy < -4.8) {
@@ -305,7 +308,7 @@ S.updateThreatSense = function updateThreatSense(dt) {
 S.updateWorld = function updateWorld(dt) {
     if (S.paused || !S.running || S.dead)
         return;
-    S.worldSeconds += dt;
+    S.worldSeconds += dt * 1.10; // V18 subtly faster day-night rhythm
     S.playSeconds += dt;
     S.player.days = S.worldSeconds / S.DAY_SECONDS;
     const night = S.nightLevel(), hour = S.currentWorldHour();
@@ -314,15 +317,20 @@ S.updateWorld = function updateWorld(dt) {
     S.scanPulse = Math.max(0, S.scanPulse - dt);
     S.updatePlayer(dt, night);
     S.updateMining(dt);
+    S.updateFallingTrees?.(dt);
     S.updateUpgrade(dt);
     S.updateFurnaces(dt);
     S.updateEnemies(dt, night);
+    S.predatorCleanupTick=(S.predatorCleanupTick||0)+dt;
+    if(S.predatorCleanupTick>8){S.predatorCleanupTick=0;S.trimPredatorDamage();}
     S.updatePlayerNoiseEvents(dt);
     S.updateThreatSense(dt);
     S.updateHorrorEvents(dt, night);
     S.updateBirds(dt, night);
+    S.updateFlyingSpawns(dt, night);
     S.updateWeather(dt, night);
     S.updateFallingLeaves(dt);
+    S.updateCampfires?.(dt);
     S.updateParticles(dt);
     S.updateDroppedItems(dt);
     S.ambientAudioTick(dt, night);
@@ -336,7 +344,7 @@ S.updateWorld = function updateWorld(dt) {
     if (isNight && !S.lastNightState) {
         if (S.currentNightNumber() <= 3)
             for (let i = S.enemies.length - 1; i >= 0; i--)
-                if (!S.enemyDefs[S.enemies[i].type].passive && S.enemies[i].type !== 'wolf')
+                if (!S.enemyDefs[S.enemies[i].type].passive && S.enemies[i].type !== 'wolf' && S.enemies[i].type !== 'hollowed' && !S.enemyDefs[S.enemies[i].type].flying)
                     S.enemies.splice(i, 1);
         S.UI.nightWarning.classList.remove('hidden');
         void S.UI.nightWarning.offsetWidth;
@@ -369,6 +377,6 @@ S.updateWorld = function updateWorld(dt) {
             S.UI.message.style.opacity = '0';
     }
     S.updateStreaming(S.player.pos[0], S.player.pos[2]);
-    S.processDirty(3);
+    S.processDirty(2);
 };
 }

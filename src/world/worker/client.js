@@ -29,14 +29,14 @@ export function createChunkWorker(S,gameData){
   }
   function reset(seed){
     token++;queue=[];inflight.clear();requested.clear();initialized=false;
-    if(worker)worker.postMessage({type:'init',token,seed:seed>>>0,gameData});
+    if(worker)worker.postMessage({type:'init',token,seed:seed>>>0,worldgenVersion:S.worldgenVersion||16,gameData});
   }
   function stop(){token++;initialized=false;queue=[];requested.clear();inflight.clear();worker?.terminate();worker=null;}
   function request(cx,cz){
     if(!initialized||!worker||!relevant(cx,cz)||S.chunks.has(key(cx,cz)))return false;
     const k=key(cx,cz);if(requested.has(k))return true;
-    if(queue.length>130)return false;
-    requested.add(k);queue.push({cx,cz});pump();return true;
+    if(queue.length>420)return false;
+    requested.add(k);queue.push({cx,cz});queue.sort((a,b)=>(a.cx-focus[0])**2+(a.cz-focus[1])**2-(b.cx-focus[0])**2-(b.cz-focus[1])**2);pump();return true;
   }
   try{
     if(typeof Worker!=='undefined'){
@@ -54,12 +54,14 @@ export function createChunkWorker(S,gameData){
           const blocks=new Uint8Array(m.buffer);applyEdits(m.cx,m.cz,blocks);
           S.chunks.set(k,{cx:m.cx,cz:m.cz,data:blocks,opaque:null,water:null,dirty:true});
           S.dirtyChunks.add(k);
+          S.markDirty?.(m.cx-1,m.cz);S.markDirty?.(m.cx+1,m.cz);
+          S.markDirty?.(m.cx,m.cz-1);S.markDirty?.(m.cx,m.cz+1);
         }
         pump();
       };
       worker.onerror=e=>{console.warn('Chunk worker unavailable',e.message);stop();};
     }
   }catch(err){console.warn('Worker init unavailable; JS fallback active',err);stop();}
-  S.chunkWorker={reset,stop,request,setFocus,get ready(){return initialized;},get pending(){return requested.size;},get backend(){return initialized?'js-parity':'synchronous-js';}};
+  S.chunkWorker={reset,stop,request,setFocus,isRequested:(cx,cz)=>requested.has(key(cx,cz)),get ready(){return initialized;},get pending(){return requested.size;},get backend(){return initialized?'js-parity':'synchronous-js';}};
   return S.chunkWorker;
 }

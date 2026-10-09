@@ -498,5 +498,56 @@
     "tier": "iron",
     "maxStack": 1,
     "durability": 190
+  },
+  "reinforced_wood": {
+    "place": 90,
+    "kind": "block"
+  },
+  "reinforced_cobble": {
+    "place": 91,
+    "kind": "block"
+  },
+  "reinforced_stone": {
+    "place": 92,
+    "kind": "block"
+  },
+  "reinforced_iron": {
+    "place": 93,
+    "kind": "block"
+  },
+  "plant_fiber": {
+    "kind": "material",
+    "rarity": "common"
+  },
+  "field_herbs": {
+    "kind": "herb",
+    "rarity": "common"
+  },
+  "moonflower": {
+    "kind": "herb",
+    "rarity": "uncommon"
+  },
+  "blood_petal": {
+    "kind": "herb",
+    "rarity": "rare"
+  },
+  "forest_poultice": {
+    "kind": "medical",
+    "heal": 13,
+    "rarity": "common"
+  },
+  "healing_wrap": {
+    "kind": "medical",
+    "heal": 38,
+    "rarity": "uncommon"
+  },
+  "hunter_salve": {
+    "kind": "medical",
+    "heal": 65,
+    "rarity": "rare"
+  },
+  "campfire": {
+    "place": 94,
+    "kind": "camp"
   }
 }

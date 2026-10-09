@@ -63,6 +63,7 @@ S.absorbArmorDamage = function absorbArmorDamage(damage) {
                 continue;
             const def = S.itemDefs[st.id];
             S.armorWear[part] += (damage / 12) * (1 + Math.random() * .15);
+            st.wear = S.armorWear[part];
             if (S.armorWear[part] >= def.durability) {
                 S.armorSlots[part] = null;
                 S.armorWear[part] = 0;
@@ -83,8 +84,12 @@ S.activateXray = function activateXray() {
         S.showMessage(`X-RAY dostępny za ${Math.ceil(S.scanCooldown)} s`, 1.2);
         return;
     }
+    const level=S.playerLevel();
+    const duration=Math.min(32,14+Math.max(0,level-1)*1.7);
+    const heal=Math.min(38,10+Math.max(0,level-1)*3.5); // 1 heart at L1, grows with progression
+    S.player.health=S.clamp(S.player.health+heal,0,100);
     S.scanCooldown = 45;
-    S.scanDuration = 14;
+    S.scanDuration = duration;
     S.scanPulse = 1.3;
     S.scanTargets = [];
     for (const e of S.enemies) {
@@ -113,7 +118,7 @@ S.activateXray = function activateXray() {
             if (S.scanTargets.length >= 210)
                 break;
         }
-    S.showMessage(`X-RAY · ${S.scanTargets.length} celów podświetlonych na 14 s`, 2.1);
+    S.showMessage(`X-RAY LVL ${level} · +${Math.round(heal/10*10)/10} HP · ${S.scanTargets.length} celów na ${Math.round(duration)} s`, 2.1);
     S.sfx('pickup', .8);
 };
 
@@ -155,11 +160,11 @@ S.renderBedrolls = function renderBedrolls(VP, fogColor, cam) {
         if (Math.hypot(x + .5 - cam[0], z + .5 - cam[2]) > 48)
             continue;
         const pos = [x + .5, y + .11, z + .5], rot = d.orientation || 0, accent = S.respawnSite && key === S.fortKey(...S.respawnSite) ? [.66, .52, .22, 1] : [.35, .43, .35, 1];
-        S.drawBox(VP, [pos[0], y + .055, pos[2]], [.92, .11, .92], [.18, .13, .10, 1], rot, fogColor, cam);
-        S.drawBox(VP, [pos[0], y + .17, pos[2]], [.73, .22, .93], [.19, .24, .19, 1], rot, fogColor, cam);
+        S.drawBox(VP, [pos[0], y + .055, pos[2]], [.85, .11, 1.12], [.18, .13, .10, 1], rot, fogColor, cam);
+        S.drawBox(VP, [pos[0], y + .17, pos[2]], [.73, .22, 1.02], [.19, .24, .19, 1], rot, fogColor, cam);
         S.drawBox(VP, S.rotatedOffset(pos, [0, .11, -.28], rot), [.68, .20, .30], accent, rot, fogColor, cam);
         S.drawBox(VP, S.rotatedOffset(pos, [0, .115, -.32], rot), [.42, .035, .18], [.08, .10, .08, 1], rot, fogColor, cam);
-        S.drawBox(VP, S.rotatedOffset(pos, [.28, .14, .09], rot), [.035, .025, .58], [.65, .56, .34, 1], rot, fogColor, cam);
+        S.drawBox(VP, S.rotatedOffset(pos, [.28, .14, .09], rot), [.035, .025, .90], [.65, .56, .34, 1], rot, fogColor, cam);
         for (const az of [-.44, .44])
             S.drawBox(VP, S.rotatedOffset(pos, [0, .00, az], rot), [.84, .12, .06], [.40, .30, .18, 1], rot, fogColor, cam);
     }

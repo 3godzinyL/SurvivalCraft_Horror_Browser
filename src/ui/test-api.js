@@ -2,7 +2,8 @@
 export function install(S) {
 // Read-only hook used by the local smoke/integration harness.
 window.__NIGHTCRAFT_TEST__ = {
-    version: 19,
+    version: 21,
+    cameraModeForTest:()=>S.cameraMode, setCameraModeForTest:mode=>{S.cameraMode=mode%3;return S.cameraMode;},
     B: S.B,
     terrainHeight: S.terrainHeight,
     biomeAt: S.biomeAt,

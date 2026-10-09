@@ -163,5 +163,16 @@
   "step_ore_2": "assets/audio/step_ore_2.wav",
   "block_hit_ore_2": "assets/audio/block_hit_ore_2.wav",
   "block_break_ore_2": "assets/audio/block_break_ore_2.wav",
-  "block_place_ore_2": "assets/audio/block_place_ore_2.wav"
+  "block_place_ore_2": "assets/audio/block_place_ore_2.wav",
+  "chest_open": "assets/audio/chest_open.wav",
+  "chest_close": "assets/audio/chest_close.wav",
+  "wolf_bark_1": "assets/audio/wolf_bark_1.wav",
+  "wolf_growl_2": "assets/audio/wolf_growl_2.wav",
+  "bat_shriek_1": "assets/audio/bat_shriek_1.wav",
+  "bat_wings": "assets/audio/bat_wings.wav",
+  "jumpscare": "assets/audio/jumpscare.wav",
+  "boar_grunt_1": "assets/audio/boar_grunt_1.wav",
+  "boar_grunt_2": "assets/audio/boar_grunt_2.wav",
+  "hollowed_breath": "assets/audio/hollowed_breath.wav",
+  "hollowed_attack": "assets/audio/hollowed_attack.wav"
 }

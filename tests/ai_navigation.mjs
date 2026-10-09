@@ -14,6 +14,7 @@ function mockS(){
  turnAngle:(a,b,step)=>a+Math.max(-step,Math.min(step,Math.atan2(Math.sin(b-a),Math.cos(b-a)))),
  clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),getBlock:(x,y,z)=>y<0?1:0,isFoliage:()=>false,
  playerAabbAt:()=>{},sfx:()=>{},damageBarrierByEnemy:()=>{},fortificationInPath:()=>null,
+ predatorSeparation:()=>[0,0],predatorFormationTarget:(e,x,z)=>[x,z],predatorObstacle:()=>null,damageObstacleByPredator:()=>false,
  cleanupEnemies:()=>{},hurtPlayer:()=>{},entityCollides:()=>true};
  installNav(S);return S;
 }

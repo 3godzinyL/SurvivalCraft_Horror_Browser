@@ -37,7 +37,7 @@ export function validateGameData(d){
 }
 export async function loadGameData(){
   const docs=await Promise.all(FILES.map(async key=>{
-    const resp=await fetch(`/data/${key}.json`,{cache:'no-store'});if(!resp.ok)throw Error(`Cannot load /data/${key}.json (${resp.status})`);
+    const resp=await fetch(new URL(`../../data/${key}.json`,import.meta.url),{cache:'no-store'});if(!resp.ok)throw Error(`Cannot load data/${key}.json (${resp.status})`);
     return resp.json();
   }));
   const d={};for(let i=0;i<FILES.length;i++){const key=FILES[i];if(key==='lang/pl')d.lang={pl:docs[i]};else d[key]=docs[i];}

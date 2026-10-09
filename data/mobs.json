@@ -264,6 +264,61 @@
       "radius": 0.36,
       "height": 1.1,
       "drop": 0
+    },
+    "night_moth": {
+      "hp": 14,
+      "speed": 6.0,
+      "damage": 4,
+      "aggro": 48,
+      "color": [
+        0.14,
+        0.13,
+        0.19,
+        1
+      ],
+      "night": true,
+      "radius": 0.39,
+      "height": 0.4,
+      "drop": 0,
+      "flying": true,
+      "cannotBreak": true
+    },
+    "night_harrier": {
+      "hp": 31,
+      "speed": 8.7,
+      "damage": 9,
+      "aggro": 55,
+      "color": [
+        0.12,
+        0.08,
+        0.15,
+        1
+      ],
+      "night": true,
+      "radius": 0.52,
+      "height": 0.55,
+      "drop": 0,
+      "flying": true,
+      "cannotBreak": true
+    },
+    "hollowed": {
+      "hp": 145,
+      "speed": 1.03,
+      "damage": 22,
+      "aggro": 0,
+      "color": [
+        0.17,
+        0.19,
+        0.18,
+        1
+      ],
+      "night": false,
+      "radius": 0.51,
+      "height": 0.91,
+      "drop": 0,
+      "passive": false,
+      "blind": true,
+      "caveOnly": true
     }
   },
   "birds": {

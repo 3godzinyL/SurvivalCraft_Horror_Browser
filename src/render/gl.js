@@ -11,8 +11,8 @@ S.voxelProgram = S.makeProgram(S.GAME_SHADERS.voxelVertex, S.GAME_SHADERS.voxelF
 S.colorProgram = S.makeProgram(S.GAME_SHADERS.colorVertex, S.GAME_SHADERS.colorFragment);
 
 S.VL = {
-    pos: S.gl.getAttribLocation(S.voxelProgram, 'aPos'), normal: S.gl.getAttribLocation(S.voxelProgram, 'aNormal'), uv: S.gl.getAttribLocation(S.voxelProgram, 'aUV'),
-    vp: S.gl.getUniformLocation(S.voxelProgram, 'uVP'), tex: S.gl.getUniformLocation(S.voxelProgram, 'uTex'), cam: S.gl.getUniformLocation(S.voxelProgram, 'uCam'), fogColor: S.gl.getUniformLocation(S.voxelProgram, 'uFogColor'), fogNear: S.gl.getUniformLocation(S.voxelProgram, 'uFogNear'), fogFar: S.gl.getUniformLocation(S.voxelProgram, 'uFogFar'), day: S.gl.getUniformLocation(S.voxelProgram, 'uDay'), torch: S.gl.getUniformLocation(S.voxelProgram, 'uTorch'), torchPower: S.gl.getUniformLocation(S.voxelProgram, 'uTorchPower'), alpha: S.gl.getUniformLocation(S.voxelProgram, 'uAlpha'), time: S.gl.getUniformLocation(S.voxelProgram, 'uTime'), water: S.gl.getUniformLocation(S.voxelProgram, 'uWater')
+    pos: S.gl.getAttribLocation(S.voxelProgram, 'aPos'), normal: S.gl.getAttribLocation(S.voxelProgram, 'aNormal'), uv: S.gl.getAttribLocation(S.voxelProgram, 'aUV'), wind: S.gl.getAttribLocation(S.voxelProgram, 'aWind'),
+    vp: S.gl.getUniformLocation(S.voxelProgram, 'uVP'), tex: S.gl.getUniformLocation(S.voxelProgram, 'uTex'), cam: S.gl.getUniformLocation(S.voxelProgram, 'uCam'), fogColor: S.gl.getUniformLocation(S.voxelProgram, 'uFogColor'), fogNear: S.gl.getUniformLocation(S.voxelProgram, 'uFogNear'), fogFar: S.gl.getUniformLocation(S.voxelProgram, 'uFogFar'), day: S.gl.getUniformLocation(S.voxelProgram, 'uDay'), torch: S.gl.getUniformLocation(S.voxelProgram, 'uTorch'), torchPower: S.gl.getUniformLocation(S.voxelProgram, 'uTorchPower'), alpha: S.gl.getUniformLocation(S.voxelProgram, 'uAlpha'), time: S.gl.getUniformLocation(S.voxelProgram, 'uTime'), water: S.gl.getUniformLocation(S.voxelProgram, 'uWater'), shadowHeight: S.gl.getUniformLocation(S.voxelProgram,'uShadowHeight'), shadowOrigin: S.gl.getUniformLocation(S.voxelProgram,'uShadowOrigin'), shadowSpan: S.gl.getUniformLocation(S.voxelProgram,'uShadowSpan'), shadowAmount: S.gl.getUniformLocation(S.voxelProgram,'uShadowAmount')
 };
 
 S.CL = { pos: S.gl.getAttribLocation(S.colorProgram, 'aPos'), mvp: S.gl.getUniformLocation(S.colorProgram, 'uMVP'), color: S.gl.getUniformLocation(S.colorProgram, 'uColor'), fog: S.gl.getUniformLocation(S.colorProgram, 'uFog'), fogColor: S.gl.getUniformLocation(S.colorProgram, 'uFogColor') };
@@ -259,6 +259,28 @@ S.makeAtlas = function makeAtlas() {
     alphaMask(58, (x, y) => y > 4 && (Math.abs(x - 8) < 2 || Math.abs(x - 12) < 2 || Math.abs(x - 16) < 2 || ((y % 4) < 2 && Math.abs(x - 12) < 7)));
     alphaMask(70, (x, y) => y > 6 && (((x - 12) * (x - 12) + (y - 11) * (y - 11) < 76) || Math.abs(x - 12) < 2));
     alphaMask(71, (x, y) => y > 7 && (Math.abs(x - 7) < 2 || Math.abs(x - 12) < 2 || Math.abs(x - 17) < 2 || ((y % 5) < 2 && Math.abs(x - 12) < 8)));
+    // Layered procedural flower sprites: a shaded stalk, leaves and separate
+    // petal pixels. Cut-out alpha ensures the world doesn't show square cards.
+    const blossom=(idx,petals,count=1)=>{
+        const ox=(idx%cols)*tile, oy=Math.floor(idx/cols)*tile;
+        ctx.clearRect(ox,oy,tile,tile);
+        const fill=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(ox+x,oy+y,w,h);};
+        for(let n=0;n<count;n++){
+            const px=count===1?12:6+n*7,py=8+((n*3)%5);
+            for(let y=py+3;y<24;y++){fill(px,y,1,1,y%3===0?'#2a5228':'#3e7630');if(y%7===0){fill(px+1,y,3,2,'#3c7236');fill(px-3,y+1,3,2,'#37672d');}}
+            const petal=petals[n%petals.length];
+            for(const [dx,dy] of [[-3,0],[3,0],[0,-3],[0,3],[-2,-2],[2,2]]){
+                fill(px+dx-1,py+dy-1,3,3,petal);
+                fill(px+dx,py+dy,1,1,'#e5d8c0');
+            }
+            fill(px-1,py-1,3,3,'#d6ad45');fill(px,py,1,1,'#f7e8a2');
+        }
+    };
+    blossom(40,['#ad283a','#cb3d4d','#e26b62']);
+    blossom(41,['#d3d6c8','#f0f1de','#bcbfac']);
+    blossom(56,['#526db1','#7999e9','#a5b4e5']);
+    blossom(57,['#c5a13b','#f4d158','#eab747']);
+    blossom(58,['#aa719c','#c191bd','#85608b'],3);
     // Draw optional artist-made PNGs *after* the deterministic procedural bake.
     // Atlas indices, UVs, ID map and save compatibility remain unchanged.
     for(const [rawIndex,textureName] of Object.entries(S.GAME_DATA.blocks.atlasNames)){

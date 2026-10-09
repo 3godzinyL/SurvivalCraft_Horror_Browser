@@ -25,32 +25,51 @@ S.gl.bindBuffer(S.gl.ARRAY_BUFFER, S.outlineBuffer);
 
 S.gl.bufferData(S.gl.ARRAY_BUFFER, new Float32Array(S.outlineVerts), S.gl.STATIC_DRAW);
 
+// Six complete faces per damage stage: each +4% uncovers one more fine
+// fracture on EVERY face.  The old buffer interleaved whole faces and
+// truncating by percentage made the other five faces look undamaged.
 S.crackVerts = [];
-
+S.crackStages=24;
+S.crackVertsPerStage=36; // one ribbon = 6 vertices, 6 faces
 (() => {
-    const facesC = [['z', .0015], ['z', .9985], ['x', .0015], ['x', .9985], ['y', .0015], ['y', .9985]];
-    const ribbon = (axis, v, a, b, c, d, w) => {
-        const dx = c - a, dy = d - b, len = Math.hypot(dx, dy) || 1, px = -dy / len * w, py = dx / len * w;
-        const q = [[a + px, b + py], [a - px, b - py], [c - px, d - py], [a + px, b + py], [c - px, d - py], [c + px, d + py]];
-        for (const [u, t] of q) {
-            if (axis === 'z')
-                S.crackVerts.push(u, t, v);
-            else if (axis === 'x')
-                S.crackVerts.push(v, u, t);
-            else
-                S.crackVerts.push(u, v, t);
-        }
-    };
-    for (let f = 0; f < facesC.length; f++) {
-        const [axis, v] = facesC[f];
-        for (let i = 0; i < 18; i++) {
-            const a = .07 + ((i * 37 + f * 11) % 84) / 100, b = .07 + ((i * 53 + f * 17) % 84) / 100, c = .07 + ((i * 29 + f * 23) % 84) / 100, d = .07 + ((i * 71 + f * 7) % 84) / 100;
-            ribbon(axis, v, a, b, c, d, .036 + (i % 4 === 0 ? .018 : 0));
-            if (i % 3 === 0) {
-                const mx = (a + c) * .5, my = (b + d) * .5, ex = S.clamp(mx + (((i * 19 + f * 13) % 31) - 15) / 100, .06, .94), ey = S.clamp(my + (((i * 23 + f * 7) % 31) - 15) / 100, .06, .94);
-                ribbon(axis, v, mx, my, ex, ey, .026);
-            }
-        }
+    const faces=[['z',-.0016],['z',1.0016],['x',-.0016],['x',1.0016],['y',-.0016],['y',1.0016]];
+    function ribbon(axis,fixed,a,b,c,d,width,reverse=false){
+      const dx=c-a,dy=d-b,scale=width/(Math.hypot(dx,dy)||1),px=-dy*scale,py=dx*scale;
+      const verts=[[a+px,b+py],[a-px,b-py],[c-px,d-py],[a+px,b+py],[c-px,d-py],[c+px,d+py]];
+      for(let idx=0;idx<6;idx++){
+        const [u,v]=verts[reverse ? Math.floor(idx/3)*3+2-idx%3 : idx];
+        if(axis==='z')S.crackVerts.push(u,v,fixed);
+        else if(axis==='x')S.crackVerts.push(fixed,u,v);
+        else S.crackVerts.push(u,fixed,v);
+      }
+    }
+    // A few branching fracture networks instead of 24 radial star-spokes.
+    // Every stage adds ONE small linked segment on each face; after a couple
+    // of percent damage even all six faces show fine but subtle cracking.
+    const branches=[
+      [[.17,.13],[.32,.23],[.42,.33],[.51,.48],[.57,.61],[.67,.70],[.78,.78],[.90,.86],[.95,.90]],
+      [[.42,.33],[.39,.44],[.31,.52],[.24,.61],[.18,.71],[.13,.79]],
+      [[.57,.61],[.68,.56],[.75,.47],[.80,.36],[.89,.31],[.94,.25]],
+      [[.67,.70],[.64,.81],[.61,.90]],
+      [[.51,.48],[.51,.38],[.60,.31],[.69,.26],[.79,.20]]
+    ];
+    const segments=[];
+    // Interleave the branches so growing damage looks like advancing veins.
+    const offsets=Array(branches.length).fill(0);
+    const schedule=[0,0,0,1,0,1,0,2,0,1,2,0,1,2,3,2,1,3,4,2,4,4,4,0];
+    for(const id of schedule){
+      const path=branches[id],i=offsets[id]++;
+      if(i<path.length-1)segments.push([path[i],path[i+1]]);
+      else segments.push([[.48,.48],[.48,.48]]);
+    }
+    for(let stage=0;stage<S.crackStages;stage++){
+      for(let face=0;face<6;face++){
+        const [axis,fixed]=faces[face],[[ax,ay],[bx,by]]=segments[stage];
+        // Stable tiny per-face offset avoids perfect repeated screen-space glyphs.
+        const offset=(face-2.5)*.005;
+        const clamp=x=>Math.max(.02,Math.min(.98,x));
+        ribbon(axis,fixed,clamp(ax+offset),clamp(ay-offset),clamp(bx+offset),clamp(by-offset),.0010+(stage%6===0?.00032:0),face===0||face===2||face===5);
+      }
     }
 })();
 
@@ -61,10 +80,10 @@ S.gl.bindBuffer(S.gl.ARRAY_BUFFER, S.crackBuffer);
 S.gl.bufferData(S.gl.ARRAY_BUFFER, new Float32Array(S.crackVerts), S.gl.STATIC_DRAW);
 
 S.particleProgram = S.makeProgram(`
-    attribute vec3 aPos; attribute vec4 aColor; attribute float aSize; uniform mat4 uVP; varying vec4 vColor;
+    attribute vec3 aPos; attribute vec4 aColor; attribute float aSize; uniform mat4 uVP; varying mediump vec4 vColor;
     void main(){vColor=aColor;gl_Position=uVP*vec4(aPos,1.0);gl_PointSize=aSize;}
   `, `
-    precision mediump float; varying vec4 vColor;
+    precision mediump float; varying mediump vec4 vColor;
     void main(){vec2 p=gl_PointCoord-vec2(.5);if(dot(p,p)>.25)discard;gl_FragColor=vColor;}
   `);
 

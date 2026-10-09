@@ -23,6 +23,7 @@ S.renderHearts = function renderHearts() {
 S.updateHUD = function updateHUD(dt) {
     if (!S.running)
         return;
+    if(S.UI.forestScare) S.UI.forestScare.style.opacity=String(S.forestScareOpacity||0);
     const ph = (S.worldSeconds % S.DAY_SECONDS) / S.DAY_SECONDS, hours = ph * 24, hh = Math.floor(hours) % 24, mm = Math.floor((hours - hh) * 60), dayNo = Math.floor(S.worldSeconds / S.DAY_SECONDS) + 1, night = S.nightLevel();
     const biome = S.biomeAt(Math.floor(S.player.pos[0]), Math.floor(S.player.pos[2]));
     if (S.UI.worldClock)
@@ -39,6 +40,16 @@ S.updateHUD = function updateHUD(dt) {
         const hd = S.player.yaw * 180 / Math.PI;
         S.UI.compassStrip.style.backgroundPositionX = `${(-hd * 1.65).toFixed(1)}px`;
     }
+    if(S.UI.waypointHud){
+        S.UI.waypointHud.classList.toggle('hidden',!S.waypoint);
+        if(S.waypoint){
+            const dx=S.waypoint.x-S.player.pos[0],dz=S.waypoint.z-S.player.pos[2];
+            const desired=Math.atan2(dx,-dz);
+            let angle=(desired-S.player.yaw+Math.PI*3)%(Math.PI*2)-Math.PI;
+            S.UI.waypointArrow.style.transform=`rotate(${angle}rad)`;
+            S.UI.waypointText.textContent=`CEL · ${Math.round(Math.hypot(dx,dz))} kratek · X ${S.waypoint.x} Z ${S.waypoint.z}`;
+        }
+    }
     S.updateArmorMiniHud();
     if (S.UI.scanWave)
         S.UI.scanWave.style.opacity = String(S.scanPulse > 0 ? S.clamp(S.scanPulse, 0, .8) : 0);
@@ -49,7 +60,7 @@ S.updateHUD = function updateHUD(dt) {
     if (S.UI.miniLevel)
         S.UI.miniLevel.textContent = `L${S.playerLevel()}`;
     if (S.UI.scanAbility)
-        S.UI.scanAbility.textContent = S.playerLevel() < 1 ? `X-RAY · ODBLOKUJ LVL 1 (${S.xp}/90 XP)` : S.scanDuration > 0 ? `X-RAY AKTYWNY · ${Math.ceil(S.scanDuration)} s` : S.scanCooldown > 0 ? `X-RAY · ${Math.ceil(S.scanCooldown)} s` : `X · X-RAY GOTOWY`;
+        S.UI.scanAbility.textContent = S.playerLevel() < 1 ? `X-RAY · ODBLOKUJ LVL 1 (${S.xp}/90 XP)` : S.scanDuration > 0 ? `X-RAY LVL ${S.playerLevel()} · ${Math.ceil(S.scanDuration)} s` : S.scanCooldown > 0 ? `X-RAY · ${Math.ceil(S.scanCooldown)} s` : `X · X-RAY GOTOWY`;
     if (S.UI.xpBar)
         S.UI.xpBar.style.width = `${(S.xp % 90) / 90 * 100}%`;
     if (S.UI.xpLabel)
@@ -93,7 +104,7 @@ S.updateHUD = function updateHUD(dt) {
 };
 
 S.frame = function frame(now) { const dt = Math.min(.05, (now - S.lastTime) / 1000 || .016); S.lastTime = now; if (S.running && !S.paused && !S.dead)
-    S.updateWorld(dt); S.render(); S.updateHUD(dt); S.updateMinimap(dt); if (S.mapOpen)
+    S.updateWorld(dt); S.render(); S.updateHUD(dt); S.updateMinimap(dt); S.netUpdate?.(now); if (S.mapOpen)
     S.renderFullMap(); requestAnimationFrame(S.frame); };
 
 requestAnimationFrame(S.frame);

@@ -40,7 +40,7 @@ S.saveGame = function saveGame() {
         return;
     try {
         const data = {
-            version: 19, seed: S.worldSeed, seedText: S.UI.seedInput.value || String(S.worldSeed),
+            version: 24, worldgenVersion: S.worldgenVersion || 16, seed: S.worldSeed, seedText: S.UI.seedInput.value || String(S.worldSeed),
             difficulty: S.difficulty,
             worldSeconds: S.worldSeconds,
             playSeconds: S.playSeconds,
@@ -51,12 +51,14 @@ S.saveGame = function saveGame() {
             starterChestPos: S.starterChestPos,
             starterChestLoot: S.starterChestLoot,
             ruinChests: [...S.ruinChests.entries()], bedrolls: [...S.bedrolls.entries()],
-            respawnSite: S.respawnSite,
+            respawnSite: S.respawnSite, lastDeathPosition: S.lastDeathPosition, waypoint: S.waypoint,
+            fallenLogDamage: [...(S.fallenLogDamage || new Map()).entries()],
             armorSlots: S.armorSlots,
             armorWear: S.armorWear,
             xp: S.xp,
             adminMode: S.adminMode,
-            edits: [...S.edits.entries()], fortifications: [...S.fortifications.entries()], furnaces: [...S.furnaces.entries()], droppedItems: S.droppedItems.slice(-120).map(d => ({ id: d.id, count: d.count, pos: d.pos, vel: d.vel, age: d.age, pickupDelay: d.pickupDelay, spin: d.spin, bob: d.bob })),
+            fallingTrees: (S.fallingTrees||[]).map(({root,id,logs,leaves,height,dx,dz,age,angle})=>({root,id,logs,leaves,height,dx,dz,age,angle})),
+            edits: [...S.edits.entries()], enemyBlockDamage: [...S.enemyBlockDamage.entries()], fortifications: [...S.fortifications.entries()], torchMounts: [...S.torchMounts.entries()], furnaces: [...S.furnaces.entries()], droppedItems: S.droppedItems.slice(-120).map(d => ({ id: d.id, count: d.count, pos: d.pos, vel: d.vel, age: d.age, pickupDelay: d.pickupDelay, spin: d.spin, bob: d.bob })),
             settings: { sensitivity: S.input.sensitivity, volume: S.audio.volume, renderDistance: S.renderDistance }
         };
         S.cachedSave = JSON.stringify(data);
@@ -76,6 +78,10 @@ S.saveGame = function saveGame() {
 };
 
 S.clearWorldRuntime = function clearWorldRuntime() {
+    if(S.fallingTrees) S.fallingTrees.length=0;
+    S.fallenLogDamage?.clear();
+    S.lastDeathPosition = null; S.waypoint=null;
+    S.treeChopAim=null;
     S.rainDrops.length = 0;
     S.glassDroplets.length = 0;
     S.rainEmitBudget = 0;
@@ -98,12 +104,17 @@ S.clearWorldRuntime = function clearWorldRuntime() {
     S.dirtyChunks.clear();
     S.edits.clear();
     S.fortifications.clear();
+    S.enemyBlockDamage.clear();
     S.furnaces.clear();
+    S.torchMounts.clear();
     S.enemies.length = 0;
+    S.skySpawnTimer=11;
     if (typeof S.birds !== 'undefined')
         S.birds.length = 0;
     if (typeof S.apparitions !== 'undefined')
         S.apparitions.length = 0;
+    if(S.forestEyes) S.forestEyes.length=0;
+    S.forestScareAge=0; S.forestScareOpacity=0;
     if (typeof S.fallingLeaves !== 'undefined')
         S.fallingLeaves.length = 0;
     if (typeof S.playerNoiseEvents !== 'undefined')
@@ -129,6 +140,7 @@ S.randomStartingEquipment = function randomStartingEquipment() {
         const part = pool.splice(j, 1)[0], id = 'leather_' + part, max = S.itemDefs[id].durability;
         S.armorSlots[part] = { id, count: 1 };
         S.armorWear[part] = Math.round(max * (.15 + .59 * S.hash2i(S.worldSeed ^ (i * 0x3ad5), 0x9412 + i, 0x5a12)));
+        S.armorSlots[part].wear=S.armorWear[part];
         chosen.push(part);
     }
     return chosen;
@@ -250,6 +262,7 @@ S.startNewGame = function startNewGame() {
     const seedText = (S.UI.seedInput.value.trim() || `${Date.now()}-${Math.floor(Math.random() * 9999)}`);
     S.UI.seedInput.value = seedText;
     S.worldSeed = S.hashString(seedText);
+    S.worldgenVersion = 22;
     S.chunkWorker?.reset(S.worldSeed);
     S.difficulty = S.UI.difficultySelect.value;
     S.resetPlayer();
@@ -257,6 +270,8 @@ S.startNewGame = function startNewGame() {
     S.playSeconds = 0;
     S.spawnTimer = 5;
     S.apparitionTimer = 24 + Math.random() * 24;
+    S.forestEyes.length=0; S.forestEyeClock=13+Math.random()*18;
+    S.forestScareAge=0; S.forestScareOpacity=0; S.forestScareClock=95+Math.random()*90;
     S.phantomRun.active = false;
     S.phantomRun.cooldown = 42 + Math.random() * 75;
     S.blackoutTimer = 0;
@@ -293,6 +308,7 @@ S.loadGame = function loadGame() {
     S.clearWorldRuntime();
     S.resetPlayer();
     S.worldSeed = d.seed >>> 0;
+    S.worldgenVersion = d.worldgenVersion || 16;
     S.chunkWorker?.reset(S.worldSeed);
     S.UI.seedInput.value = d.seedText || String(S.worldSeed);
     S.difficulty = d.difficulty || 'nightmare';
@@ -307,9 +323,15 @@ S.loadGame = function loadGame() {
             S.worldSeconds = raw;
     }
     S.playSeconds = d.playSeconds || 0;
+    if(Array.isArray(d.fallingTrees))S.fallingTrees=d.fallingTrees.filter(t=>
+        t&&Array.isArray(t.root)&&t.root.length===3&&Array.isArray(t.logs)&&t.logs.length<=185&&
+        Array.isArray(t.leaves)&&t.leaves.length<=750&&Number.isFinite(t.age)&&Number.isFinite(t.dx)&&Number.isFinite(t.dz)
+    ).slice(0,8);
     if (Array.isArray(d.edits))
         for (const [k, v] of d.edits)
             S.edits.set(k, v);
+    if(Array.isArray(d.torchMounts))for(const [k,n] of d.torchMounts)
+        if(S.edits.get(k)===S.B.TORCH && Array.isArray(n) && n.length===3)S.torchMounts.set(k,n);
     S.player.pos = Array.isArray(d.pos) ? d.pos : [0, 26, 0];
     S.worldSpawn = Array.isArray(d.worldSpawn) ? d.worldSpawn : (Array.isArray(d.starterChestPos) ? [d.starterChestPos[0], S.findSurface(d.starterChestPos[0], d.starterChestPos[2]), d.starterChestPos[2]] : [...S.player.pos]);
     S.player.distanceWalked = Number(d.distanceWalked) || 0;
@@ -333,6 +355,9 @@ S.loadGame = function loadGame() {
     S.repairInventoryFootprints();
     S.xp = Math.max(0, Number(d.xp) || 0);
     S.respawnSite = Array.isArray(d.respawnSite) ? d.respawnSite : null;
+    S.lastDeathPosition = Array.isArray(d.lastDeathPosition) && d.lastDeathPosition.length===3 && d.lastDeathPosition.every(Number.isFinite) ? d.lastDeathPosition : null;
+    S.waypoint = d.waypoint && Number.isFinite(d.waypoint.x) && Number.isFinite(d.waypoint.z) && Math.abs(d.waypoint.x)<1000000 && Math.abs(d.waypoint.z)<1000000 ? {x:Math.round(d.waypoint.x),z:Math.round(d.waypoint.z)} : null;
+    S.fallenLogDamage = new Map((Array.isArray(d.fallenLogDamage) ? d.fallenLogDamage : []).filter(entry=>Array.isArray(entry)&&/^-?\d+,-?\d+,-?\d+$/.test(entry[0])&&Number.isFinite(entry[1])&&entry[1]>=.05&&entry[1]<=.3));
     for (const k of Object.keys(S.armorSlots)) {
         S.armorSlots[k] = S.normalizeStack(d.armorSlots?.[k]);
         S.armorWear[k] = Math.max(0, Number(d.armorWear?.[k]) || 0);
@@ -349,6 +374,7 @@ S.loadGame = function loadGame() {
     S.starterChestLoot = Array.isArray(d.starterChestLoot) ? d.starterChestLoot.slice(0, 9).map(S.normalizeStack) : Array(9).fill(null);
     while (S.starterChestLoot.length < 9)
         S.starterChestLoot.push(null);
+    if(Array.isArray(d.enemyBlockDamage))for(const [k,v] of d.enemyBlockDamage){if(typeof k==='string'&&v&&Number.isFinite(v.hp)&&v.hp>0)S.enemyBlockDamage.set(k,v);}
     if (Array.isArray(d.fortifications))
         for (const [k, v] of d.fortifications)
             S.fortifications.set(k, v);
@@ -375,7 +401,7 @@ S.loadGame = function loadGame() {
         const oldSens = Number(d.settings.sensitivity) || .0095;
         S.input.sensitivity = S.clamp(d.version >= 5 ? oldSens : Math.max(.0105, oldSens * 1.18), .002, .022);
         S.audio.volume = S.clamp(d.settings.volume ?? .7, 0, 1);
-        S.renderDistance = S.clamp(Number(d.settings.renderDistance) || 4, 2, 6);
+        S.renderDistance = S.clamp(Number(d.settings.renderDistance) || 12, 2, 12);
         S.UI.sensInput.value = String(S.input.sensitivity);
         S.UI.volumeInput.value = String(S.audio.volume);
         S.UI.renderDistanceSelect.value = String(S.renderDistance);

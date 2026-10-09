@@ -16,7 +16,7 @@ S.updateMinimap = function updateMinimap(dt) {
     if (S.minimapTimer > 0)
         return;
     S.minimapTimer = .12;
-    const c = S.UI.minimap, ctx = c.getContext('2d'), W = c.width, H = c.height, steps = 41, radius = 57, cell = W / steps;
+    const c = S.UI.minimap, ctx = c.getContext('2d'), W = c.width, H = c.height, steps = 41, radius = S.clamp((S.mapView?.radius || 360) * 57 / 360, 22, 330), cell = W / steps;
     ctx.clearRect(0, 0, W, H);
     ctx.save();
     ctx.beginPath();
@@ -35,6 +35,26 @@ S.updateMinimap = function updateMinimap(dt) {
                 ctx.fillRect(i * cell, j * cell, Math.ceil(cell) + 1, Math.ceil(cell) + 1);
             }
         }
+    // Last grave marker remains after respawn and points to the actual death.
+    if (S.lastDeathPosition) {
+        const dx=(S.lastDeathPosition[0]-S.player.pos[0])/radius*(W/2),dz=(S.lastDeathPosition[2]-S.player.pos[2])/radius*(H/2);
+        if(Math.hypot(dx,dz)<W*.47){
+            ctx.strokeStyle='#f18f8f';ctx.lineWidth=2.1;
+            ctx.beginPath();ctx.moveTo(W/2+dx-4,H/2+dz-4);ctx.lineTo(W/2+dx+4,H/2+dz+4);
+            ctx.moveTo(W/2+dx+4,H/2+dz-4);ctx.lineTo(W/2+dx-4,H/2+dz+4);ctx.stroke();
+        }
+    }
+    // Waypoint is world-anchored. Edge arrow stays visible even when marker
+    // is beyond mini-map range (it never teleports to the player).
+    if(S.waypoint){
+        const dx=(S.waypoint.x-S.player.pos[0])/radius*(W/2);
+        const dz=(S.waypoint.z-S.player.pos[2])/radius*(H/2);
+        const len=Math.hypot(dx,dz),scale=len>W*.43?(W*.43/len):1;
+        const mx=W/2+dx*scale,mz=H/2+dz*scale;
+        ctx.save();ctx.translate(mx,mz);ctx.rotate(Math.atan2(dx,-dz));
+        ctx.strokeStyle='#261f10';ctx.lineWidth=2.5;ctx.fillStyle='#ffe3a1';
+        ctx.beginPath();ctx.moveTo(0,-8);ctx.lineTo(5,4);ctx.lineTo(0,1);ctx.lineTo(-5,4);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+    }
     // chest + nearby hostile markers
     if (S.starterChestPos) {
         const dx = (S.starterChestPos[0] + .5 - S.player.pos[0]) / radius * (W / 2), dz = (S.starterChestPos[2] + .5 - S.player.pos[2]) / radius * (H / 2);
@@ -43,6 +63,7 @@ S.updateMinimap = function updateMinimap(dt) {
             ctx.fillRect(W / 2 + dx - 2, H / 2 + dz - 2, 4, 4);
         }
     }
+    S.mpDrawMarkers?.(ctx,W,H,radius);
     for (const e of S.enemies) {
         const def = S.enemyDefs[e.type];
         if (def.passive)

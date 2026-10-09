@@ -1,5 +1,5 @@
 // Versioned, pure, lossless save migrations: old block IDs never remapped.
-export const CURRENT_SAVE_VERSION=19;
+export const CURRENT_SAVE_VERSION=24;
 export function migrateSave(raw){
   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw TypeError('save must be an object');
   if(!Number.isInteger(raw.version)||raw.version<1)throw Error('Unsupported save format');

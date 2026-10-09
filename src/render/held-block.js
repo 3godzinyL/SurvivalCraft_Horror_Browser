@@ -1,10 +1,10 @@
 // NightCraft V15 · native ES module (render/held-block.js); installs into the explicit shared state.
 export function install(S) {
 S.heldBlockProgram = S.makeProgram(`
-    attribute vec3 aPos; attribute vec3 aNormal; attribute vec2 aUV; uniform mat4 uMVP; varying vec3 vN; varying vec2 vUV;
+    attribute vec3 aPos; attribute vec3 aNormal; attribute vec2 aUV; uniform mat4 uMVP; varying mediump vec3 vN; varying mediump vec2 vUV;
     void main(){vN=aNormal;vUV=aUV;gl_Position=uMVP*vec4(aPos,1.0);}
   `, `
-    precision mediump float; varying vec3 vN; varying vec2 vUV; uniform sampler2D uTex;
+    precision mediump float; varying mediump vec3 vN; varying mediump vec2 vUV; uniform sampler2D uTex;
     void main(){vec4 t=texture2D(uTex,vUV);if(t.a<.12)discard;vec3 n=normalize(vN);float l=.72+max(0.0,dot(n,normalize(vec3(-.4,.82,.32))))*.28;gl_FragColor=vec4(t.rgb*l,t.a);}
   `);
 
@@ -59,7 +59,7 @@ S.shouldExpose = function shouldExpose(id, nid) { if (id === S.B.WATER)
     return nid === S.B.AIR || nid === S.B.WATER || nid === S.B.TORCH || S.blockDefs[nid]?.decor; if (id === S.B.TORCH || S.blockDefs[id]?.decor)
     return false; return nid === S.B.AIR || nid === S.B.WATER || nid === S.B.TORCH || S.blockDefs[nid]?.decor || S.isFoliage(nid); };
 
-S.makeMeshBuffers = function makeMeshBuffers(pos, nor, uv) {
+S.makeMeshBuffers = function makeMeshBuffers(pos, nor, uv, wind = null) {
     if (!pos.length)
         return null;
     const obj = { count: pos.length / 3 };
@@ -72,45 +72,50 @@ S.makeMeshBuffers = function makeMeshBuffers(pos, nor, uv) {
     obj.u = S.gl.createBuffer();
     S.gl.bindBuffer(S.gl.ARRAY_BUFFER, obj.u);
     S.gl.bufferData(S.gl.ARRAY_BUFFER, new Float32Array(uv), S.gl.STATIC_DRAW);
+    if (wind && wind.length===obj.count) { obj.wind=S.gl.createBuffer();S.gl.bindBuffer(S.gl.ARRAY_BUFFER,obj.wind);S.gl.bufferData(S.gl.ARRAY_BUFFER,new Uint8Array(wind),S.gl.STATIC_DRAW); }
     return obj;
 };
 
 S.deleteMesh = function deleteMesh(m) { if (!m)
-    return; S.gl.deleteBuffer(m.p); S.gl.deleteBuffer(m.n); S.gl.deleteBuffer(m.u); };
+    return; S.gl.deleteBuffer(m.p); S.gl.deleteBuffer(m.n); S.gl.deleteBuffer(m.u); if(m.wind)S.gl.deleteBuffer(m.wind); };
 
-S.pushDecorMesh = function pushDecorMesh(P, N, U, wx, y, wz, id) {
-    const tile = S.tileFor(id, 'side'), eps = .03;
-    const planes = [[[eps, 0, eps], [1 - eps, 0, 1 - eps], [1 - eps, 1, 1 - eps], [eps, 0, eps], [1 - eps, 1, 1 - eps], [eps, 1, eps]], [[1 - eps, 0, eps], [eps, 0, 1 - eps], [eps, 1, 1 - eps], [1 - eps, 0, eps], [eps, 1, 1 - eps], [1 - eps, 1, eps]]];
-    for (const plane of planes) {
-        for (let i = 0; i < 6; i++) {
-            const v = plane[i];
-            P.push(wx + v[0], y + v[1], wz + v[2]);
-            N.push(0, 1, 0);
-            const tuv = S.tileUV(tile, S.faceUV[i][0], S.faceUV[i][1]);
-            U.push(tuv[0], tuv[1]);
-        }
+S.pushDecorMesh = function pushDecorMesh(P,N,U,W,wx,y,wz,id) {
+    const tile=S.tileFor(id,'side'), flower=S.isBillboardPlant(id);
+    const eps=.085, sways=[S.B.TALLGRASS,S.B.FERN,S.B.REEDS,S.B.BUSH,S.B.DRY_BUSH].includes(id);
+    // All flora is two-sided: backing-face culling must not make it vanish
+    // when the camera turns. Flower planes are rotated towards the camera in GLSL.
+    const planes=flower?
+      [[[eps,0,.5],[1-eps,0,.5],[1-eps,.92,.5],[eps,0,.5],[1-eps,.92,.5],[eps,.92,.5]]]:
+      [[[eps,0,eps],[1-eps,0,1-eps],[1-eps,1,1-eps],[eps,0,eps],[1-eps,1,1-eps],[eps,1,eps]],
+       [[1-eps,0,eps],[eps,0,1-eps],[eps,1,1-eps],[1-eps,0,eps],[eps,1,1-eps],[1-eps,1,eps]]];
+    const uv=[[0,1],[1,1],[1,0],[0,1],[1,0],[0,0]];
+    for(const plane of planes)for(const reverse of [false,true])for(let i=0;i<6;i++){
+        const q=reverse?Math.floor(i/3)*3+(2-i%3):i,v=plane[q];
+        P.push(wx+v[0],y+v[1],wz+v[2]);N.push(0,1,0);
+        const t=S.tileUV(tile,uv[q][0],uv[q][1]);U.push(t[0],t[1]);
+        W.push(flower?255:sways?Math.round(218*v[1]):0);
     }
 };
 
 S.rebuildChunk = function rebuildChunk(c) {
     S.deleteMesh(c.opaque);
     S.deleteMesh(c.water);
-    const op = [], on = [], ou = [], wp = [], wn = [], wu = [];
+    const op = [], on = [], ou = [], ow = [], wp = [], wn = [], wu = [], ww = [];
     const ox = c.cx * S.CHUNK, oz = c.cz * S.CHUNK;
     for (let y = 0; y < S.WORLD_H; y++)
         for (let lz = 0; lz < S.CHUNK; lz++)
             for (let lx = 0; lx < S.CHUNK; lx++) {
                 const id = c.data[S.idx3(lx, y, lz)];
-                if (id === S.B.AIR || id === S.B.TORCH || id === S.B.BEDROLL || id === S.B.WOOD_DOOR || id === S.B.WOOD_STAIRS || id === S.B.WOOD_FENCE)
+                if (id === S.B.AIR || id === S.B.TORCH || id === S.B.BEDROLL || id === S.B.CAMPFIRE || id === S.B.WOOD_DOOR || id === S.B.WOOD_STAIRS || id === S.B.WOOD_FENCE)
                     continue;
                 const wx = ox + lx, wz = oz + lz, isWater = id === S.B.WATER;
-                const P = isWater ? wp : op, N = isWater ? wn : on, U = isWater ? wu : ou;
+                const P = isWater ? wp : op, N = isWater ? wn : on, U = isWater ? wu : ou, W=isWater?ww:ow;
                 if (S.blockDefs[id]?.decor) {
-                    S.pushDecorMesh(P, N, U, wx, y, wz, id);
+                    S.pushDecorMesh(P, N, U, W, wx, y, wz, id);
                     continue;
                 }
                 for (const f of S.faces) {
-                    const nid = S.getBlock(wx + f.n[0], y + f.n[1], wz + f.n[2]);
+                    const nid = S.peekLoadedBlock(wx + f.n[0], y + f.n[1], wz + f.n[2]);
                     if (!S.shouldExpose(id, nid))
                         continue;
                     const tile = S.tileFor(id, f.side);
@@ -118,18 +123,26 @@ S.rebuildChunk = function rebuildChunk(c) {
                         const v = f.v[i];
                         P.push(wx + v[0], y + v[1], wz + v[2]);
                         N.push(f.n[0], f.n[1], f.n[2]);
-                        const fuv = f.uv || S.faceUV, tuv = S.tileUV(tile, fuv[i][0], fuv[i][1]);
+                        const fuv=f.uv||S.faceUV;
+                        const tuv=S.tileUV(tile,fuv[i][0],fuv[i][1]);
                         U.push(tuv[0], tuv[1]);
+                        W.push(S.isFoliage(id)?105:0);
                     }
                 }
             }
-    c.opaque = S.makeMeshBuffers(op, on, ou);
-    c.water = S.makeMeshBuffers(wp, wn, wu);
+    c.opaque = S.makeMeshBuffers(op, on, ou, ow);
+    c.water = S.makeMeshBuffers(wp, wn, wu, ww);
     c.dirty = false;
     S.dirtyChunks.delete(S.chunkKey(c.cx, c.cz));
 };
 
-S.processDirty = function processDirty(max = 2) { let n = 0; for (const key of [...S.dirtyChunks]) {
+S.processDirty = function processDirty(max = 2) {
+    // Do not spread and allocate a growing Set on every render frame. Keep a
+    // modest main-thread budget; the next frame resumes the queue.
+    let n = 0, inspected=0;
+    const started=performance.now();
+    for (const key of S.dirtyChunks) {
+        if(++inspected>96 || (n>0 && performance.now()-started>5.0))break;
     const c = S.chunks.get(key);
     if (c && c.dirty) {
         S.rebuildChunk(c);
@@ -140,35 +153,50 @@ S.processDirty = function processDirty(max = 2) { let n = 0; for (const key of [
         S.dirtyChunks.delete(key);
 } };
 
+// Streaming: distance-prioritized and bounded per frame, including on first spawn.
 S.updateStreaming = function updateStreaming(px, pz, force = false) {
-    const pcx = S.floorDiv(px, S.CHUNK), pcz = S.floorDiv(pz, S.CHUNK), keep = S.renderDistance + 1;
+    const pcx=S.floorDiv(px,S.CHUNK),pcz=S.floorDiv(pz,S.CHUNK);
+    const now=performance.now(),center=pcx+','+pcz;
+    // Constantly walking in loaded terrain must not rescan ~500 cells and
+    // re-evaluate evictions at 60–144 FPS. A changed chunk bypasses throttle.
+    if(!force && S.streamCenter===center && now-(S.streamLastScan||0)<145)return;
+    S.streamCenter=center;S.streamLastScan=now;
+    const radius=Math.max(2,Math.min(12,S.renderDistance|0)),keep=radius+1;
     S.chunkWorker?.setFocus(pcx,pcz,keep);
-    for (let dz = -S.renderDistance; dz <= S.renderDistance; dz++)
-        for (let dx = -S.renderDistance; dx <= S.renderDistance; dx++) {
-            if (dx * dx + dz * dz > (S.renderDistance + .6) * (S.renderDistance + .6))
-                continue;
-            const cx=pcx+dx,cz=pcz+dz;
-            // Keep the near player collision area synchronous. Distant terrain is
-            // generated off-thread; on-demand block lookups still work immediately.
-            if(!force && Math.max(Math.abs(dx),Math.abs(dz))>=2 &&
-               !S.chunks.has(S.chunkKey(cx,cz)) && S.chunkWorker?.request(cx,cz)) continue;
-            const c = S.ensureChunk(cx,cz);
-            if (c.dirty)
-                S.dirtyChunks.add(S.chunkKey(c.cx, c.cz));
+    // Cache the ring offsets. Sort nearest first to avoid empty nearby scenery.
+    if (!S.streamOffsets || S.streamRadius!==radius) {
+        S.streamRadius=radius;
+        S.streamOffsets=[];
+        for(let dz=-radius;dz<=radius;dz++)for(let dx=-radius;dx<=radius;dx++)
+            if(dx*dx+dz*dz<=(radius+.45)**2)
+                S.streamOffsets.push([dx,dz,dx*dx+dz*dz]);
+        S.streamOffsets.sort((a,b)=>a[2]-b[2]);
+    }
+    let requests=0,nearBuilt=0;
+    // Nearby chunks are guaranteed immediately; all others are requested in worker
+    // in small batches. A larger draw distance must not freeze the main thread.
+    for(const [dx,dz,dist2] of S.streamOffsets){
+        const cx=pcx+dx,cz=pcz+dz,k=S.chunkKey(cx,cz);
+        if(S.chunks.has(k))continue;
+        if(S.chunkWorker?.isRequested(cx,cz))continue;
+        if(dist2<=4){
+            if(nearBuilt++>= (force?13:2))continue;
+            S.ensureChunk(cx,cz);continue;
         }
-    for (const [key, c] of S.chunks) {
-        if (Math.abs(c.cx - pcx) > keep || Math.abs(c.cz - pcz) > keep) {
-            S.deleteMesh(c.opaque);
-            S.deleteMesh(c.water);
-            S.chunks.delete(key);
-            S.dirtyChunks.delete(key);
+        if(requests>=12)break;
+        if(S.chunkWorker?.request(cx,cz))requests++;
+        else if(!S.chunkWorker?.ready && requests<2){S.ensureChunk(cx,cz);requests++;}
+    }
+    // Incremental evictions keep the memory bounded when traveling far away.
+    for(const [key,c] of S.chunks){
+        if(Math.abs(c.cx-pcx)>keep||Math.abs(c.cz-pcz)>keep){
+            S.deleteMesh(c.opaque); S.deleteMesh(c.water);
+            S.chunks.delete(key); S.dirtyChunks.delete(key);
+            S.markDirty(c.cx-1,c.cz); S.markDirty(c.cx+1,c.cz);
+            S.markDirty(c.cx,c.cz-1); S.markDirty(c.cx,c.cz+1);
         }
     }
-    if (force) {
-        let guard = 0;
-        while (S.dirtyChunks.size && guard++ < 1000)
-            S.processDirty(8);
-    }
+    if(force)S.processDirty(18);
 };
 
 S.findSurface = function findSurface(x, z) {

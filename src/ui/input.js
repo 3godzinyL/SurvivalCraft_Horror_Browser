@@ -1,40 +1,64 @@
 // NightCraft V15 · native ES module (ui/input.js); installs into the explicit shared state.
 export function install(S) {
 S.tabReturnArmed = false;
+S.cameraMode = 0; // 0 first-person, 1 third-person behind, 2 third-person front
+S.lockPending = false;
+S.expectPointerUnlock = false;
 
 S.clearTransientInput = function clearTransientInput() { S.input.keys.clear(); S.input.mouseLeft = false; S.input.mouseRight = false; S.input.mouseMiddle = false; S.mineAmount = 0; S.mineTargetKey = ''; S.upgradeHold = 0; S.upgradeTargetKey = ''; S.setMiningHud(false); };
 
 S.updateAdminButton = function updateAdminButton() { if (!S.UI.adminToggleBtn)
     return; S.UI.adminToggleBtn.classList.toggle('active', S.adminMode); S.UI.adminToggleBtn.textContent = `TRYB ADMINISTRATORA: ${S.adminMode ? 'ON' : 'OFF'}`; };
 
-S.resumeGame = function resumeGame() { if (!S.running || S.dead)
-    return; S.paused = false; S.tabReturnArmed = false; S.inventoryOpen = false; S.adminOpen = false; S.furnaceOpen = false; S.mapOpen = false; S.chestOpen = false; S.furnaceActiveKey = null; S.UI.pauseMenu.classList.remove('active'); S.UI.inventoryPanel.classList.add('hidden'); S.UI.adminPanel.classList.add('hidden'); S.UI.furnacePanel?.classList.add('hidden'); S.UI.fullMapPanel?.classList.add('hidden'); S.canvas.focus?.(); try {
-    S.canvas.requestPointerLock?.();
-}
-catch { } S.initAudio(); S.audio.ctx?.resume?.(); };
+S.resumeGame = function resumeGame() {
+    if (!S.running || S.dead || S.lockPending) return;
+    S.tabReturnArmed = false; S.clearTransientInput(); S.clearInventoryHover?.();
+    S.inventoryOpen = false; S.adminOpen = false; S.furnaceOpen = false; S.mapOpen = false; S.chestOpen = false;
+    S.furnaceActiveKey = null; S.UI.inventoryPanel.classList.add('hidden'); S.closeRecipeCodex?.();
+    S.UI.adminPanel.classList.add('hidden'); S.UI.furnacePanel?.classList.add('hidden'); S.UI.fullMapPanel?.classList.add('hidden');
+    S.canvas.focus?.(); S.initAudio(); S.audio.ctx?.resume?.();
+    if (document.pointerLockElement === S.canvas) { S.paused = false; S.UI.pauseMenu.classList.remove('active'); return; }
+    if (typeof S.canvas.requestPointerLock !== 'function') { S.paused = false; S.UI.pauseMenu.classList.remove('active'); return; }
+    S.lockPending = true;
+    try {
+        const pending = S.canvas.requestPointerLock();
+        Promise.resolve(pending).then(() => {
+            S.lockPending = false;
+            if (document.pointerLockElement === S.canvas) { S.paused = false; S.UI.pauseMenu.classList.remove('active'); }
+        }).catch(() => { S.lockPending = false; S.paused = true; S.UI.pauseMenu.classList.add('active'); });
+    } catch (_) { S.lockPending = false; S.paused = true; S.UI.pauseMenu.classList.add('active'); }
+};
 
-S.pauseGame = function pauseGame() { if (!S.running || S.dead || S.inventoryOpen || S.adminOpen || S.furnaceOpen || S.mapOpen)
+S.pauseGame = function pauseGame() { S.clearInventoryHover?.(); if (!S.running || S.dead || S.inventoryOpen || S.adminOpen || S.furnaceOpen || S.mapOpen)
     return; S.paused = true; S.clearTransientInput(); S.UI.pauseMenu.classList.add('active'); };
 
-S.quitToMenu = function quitToMenu() { S.saveGame(); S.running = false; S.paused = true; document.exitPointerLock?.(); S.UI.pauseMenu.classList.remove('active'); S.UI.deathMenu.classList.remove('active'); S.UI.inventoryPanel.classList.add('hidden'); S.UI.adminPanel.classList.add('hidden'); S.UI.furnacePanel?.classList.add('hidden'); S.UI.fullMapPanel?.classList.add('hidden'); S.UI.hud.classList.add('hidden'); S.UI.mainMenu.classList.add('active'); S.UI.continueBtn.disabled = !S.hasSave(); };
+S.quitToMenu = function quitToMenu() { S.clearInventoryHover?.(); S.saveGame(); S.running = false; S.paused = true; document.exitPointerLock?.(); S.UI.pauseMenu.classList.remove('active'); S.UI.deathMenu.classList.remove('active'); S.UI.inventoryPanel.classList.add('hidden'); S.closeRecipeCodex?.(); S.UI.adminPanel.classList.add('hidden'); S.UI.furnacePanel?.classList.add('hidden'); S.UI.fullMapPanel?.classList.add('hidden'); S.UI.hud.classList.add('hidden'); S.UI.mainMenu.classList.add('active'); S.UI.continueBtn.disabled = !S.hasSave(); };
 
-document.addEventListener('pointerlockchange', () => { S.input.locked = document.pointerLockElement === S.canvas; if (S.input.locked) {
-    S.tabReturnArmed = false;
-    return;
-} if (S.running && !S.dead && !S.inventoryOpen && !S.adminOpen && !S.furnaceOpen && !S.mapOpen && !S.paused)
-    S.pauseGame(); });
+document.addEventListener('pointerlockchange', () => {
+    S.input.locked = document.pointerLockElement === S.canvas;
+    if (S.input.locked) { S.lockPending = false; S.expectPointerUnlock = false; S.tabReturnArmed = false; S.paused = false; S.UI.pauseMenu.classList.remove('active'); return; }
+    if (S.expectPointerUnlock) { S.expectPointerUnlock = false; return; }
+    if (S.lockPending) return;
+    if (S.running && !S.dead && !S.inventoryOpen && !S.adminOpen && !S.furnaceOpen && !S.mapOpen && !S.paused) S.pauseGame();
+});
 
 document.addEventListener('mousemove', e => { if (!S.input.locked || S.paused)
     return; S.player.yaw += e.movementX * S.input.sensitivity; S.player.pitch -= e.movementY * S.input.sensitivity; S.player.sway = S.clamp(S.player.sway + e.movementX * 0.0008, -.08, .08); S.player.pitch = S.clamp(S.player.pitch, -1.53, 1.53); });
 
 document.addEventListener('keydown', e => {
-    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight', 'ControlLeft'].includes(e.code))
+    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight', 'ControlLeft', 'F5'].includes(e.code))
         e.preventDefault();
+    if (e.code === 'F5' && S.running && !S.dead) { // prevent browser reload; cycle camera
+        e.preventDefault(); e.stopPropagation();
+        if (!e.repeat) { S.cameraMode = (S.cameraMode + 1) % 3; S.showMessage(['KAMERA · Z OCZU','KAMERA · ZA PLECAMI','KAMERA · OD PRZODU'][S.cameraMode], 1.2); }
+        return;
+    }
     S.input.keys.add(e.code);
     if (e.code === 'Escape' && S.running && !S.dead) {
         e.preventDefault();
         S.input.keys.delete(e.code);
-        if (S.mapOpen)
+        if(S.recipeCodexOpen)S.closeRecipeCodex();
+        else if (S.mapOpen)
             S.closeFullMap(true);
         else if (S.furnaceOpen)
             S.closeFurnace(true);
@@ -45,9 +69,8 @@ document.addEventListener('keydown', e => {
         else if (S.paused)
             S.resumeGame();
         else {
-            S.paused = true;
-            document.exitPointerLock?.();
-            S.UI.pauseMenu.classList.add('active');
+            S.pauseGame();
+            if (document.pointerLockElement === S.canvas) { S.expectPointerUnlock = true; document.exitPointerLock?.(); }
         }
         return;
     }
@@ -55,6 +78,7 @@ document.addEventListener('keydown', e => {
         e.preventDefault();
         if (S.furnaceOpen)
             S.closeFurnace(true);
+        else if(S.recipeCodexOpen)S.closeRecipeCodex();
         else if (S.mapOpen)
             S.closeFullMap(true);
         else if (S.adminOpen)
@@ -66,7 +90,8 @@ document.addEventListener('keydown', e => {
     }
     if (e.code === 'KeyM' && S.running && !S.dead) {
         e.preventDefault();
-        if (S.mapOpen)
+        if(S.recipeCodexOpen)S.closeRecipeCodex();
+        else if (S.mapOpen)
             S.closeFullMap(true);
         else
             S.openFullMap();
@@ -87,8 +112,9 @@ document.addEventListener('keydown', e => {
         e.preventDefault();
         S.activateXray();
     }
-    if (/^Digit[1-9]$/.test(e.code) && S.running && !S.inventoryOpen && !S.adminOpen && !S.furnaceOpen && !S.mapOpen)
-        S.setSelected(Number(e.code.slice(5)) - 1);
+    if (/^Digit[1-9]$/.test(e.code) && S.running && !S.inventoryOpen && !S.adminOpen && !S.furnaceOpen && !S.mapOpen) {
+        e.preventDefault(); S.setSelected(Number(e.code.slice(5)) - 1);
+    }
 });
 
 document.addEventListener('keyup', e => S.input.keys.delete(e.code));

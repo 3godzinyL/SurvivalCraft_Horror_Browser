@@ -167,7 +167,7 @@ S.loadAudioSamples = async function loadAudioSamples() {
     // Decode a small high-priority set first, then the large material library in
     // batches. This avoids a one-frame storm of ~160 simultaneous decodes while
     // HTMLAudio remains a fallback for a sample requested before its buffer exists.
-    const priorityKeys = new Set(['evening', 'music', 'hurt', 'heartbeat', 'thunder', 'rain_loop', 'wind_loop', 'thunder2', 'thunder3', 'splash', 'swim', 'pickup1', 'pickup2', 'step_grass_1', 'step_grass_2', 'step_stone_1', 'step_stone_2', 'block_hit_dirt_1', 'block_break_dirt_1', 'block_place_dirt_1']);
+    const priorityKeys = new Set(['evening', 'music', 'hurt', 'heartbeat', 'thunder', 'rain_loop', 'wind_loop', 'thunder2', 'thunder3', 'splash', 'swim', 'pickup1', 'pickup2', 'chest_open', 'chest_close', 'jumpscare', 'wolf_bark_1', 'wolf_growl_2', 'bat_shriek_1', 'bat_wings', 'step_grass_1', 'step_grass_2', 'step_stone_1', 'step_stone_2', 'block_hit_dirt_1', 'block_break_dirt_1', 'block_place_dirt_1']);
     const entries = Object.entries(S.audioFiles), priority = entries.filter(([k]) => priorityKeys.has(k)), rest = entries.filter(([k]) => !priorityKeys.has(k));
     await Promise.all(priority.map(loadOne));
     S.startAmbientLoops();
@@ -226,6 +226,10 @@ window.addEventListener('keydown', S.unlockAudio, { capture: true });
 S.sfx = function sfx(type, amount = 1, material = 'generic') {
     S.unlockAudio();
     const a = amount;
+    if (type === 'boar_grunt_1' || type === 'boar_grunt_2') {
+        S.playSample(type,.80*a,.91+Math.random()*.16);
+        return;
+    }
     if (type === 'step') {
         const mat = S.BLOCK_SOUND_MATERIALS.includes(material) ? material : 'stone', key = `step_${mat}_${1 + (Math.random() > .5 ? 1 : 0)}`;
         if (S.playSample(key, 1.02 * a, .88 + Math.random() * .22, (Math.random() - .5) * 110))
@@ -249,7 +253,7 @@ S.sfx = function sfx(type, amount = 1, material = 'generic') {
         return;
     }
     if (type === 'mine' || type === 'break' || type === 'place') {
-        const mat = S.BLOCK_SOUND_MATERIALS.includes(material) ? material : 'stone', action = type === 'mine' ? 'hit' : type, variant = 1 + (Math.random() > .5 ? 1 : 0), key = `block_${action}_${mat}_${variant}`, gain = (type === 'mine' ? .88 : type === 'break' ? 1.04 : .94) * a, rate = (type === 'break' ? .93 : .97) + (Math.random() - .5) * .12;
+        const mat = S.BLOCK_SOUND_MATERIALS.includes(material) ? material : 'stone', action = type === 'mine' ? 'hit' : type, variant = 1 + (Math.random() > .5 ? 1 : 0), key = `block_${action}_${mat}_${variant}`, gain = (type === 'mine' ? .63 : type === 'break' ? 1.04 : .94) * a, rate = (type === 'mine' ? .81 : type === 'break' ? .89 : .94) + (Math.random() - .5) * .09;
         if (S.playSample(key, gain, rate, (Math.random() - .5) * 55))
             return;
         const fallback = type === 'mine' ? 'block_hit' : type === 'break' ? 'block_break' : 'block_place';
@@ -289,7 +293,7 @@ S.sfx = function sfx(type, amount = 1, material = 'generic') {
         return;
     }
     if (type === 'growl') {
-        if (S.playSample('growl', .84 * a, .84 + Math.random() * .18))
+        if (S.playSample(Math.random()<.50?'growl':'wolf_growl_2', .84 * a, .84 + Math.random() * .18))
             return;
         S.noiseBurst(.26, .11 * a, 420);
         return;
@@ -339,8 +343,20 @@ S.sfx = function sfx(type, amount = 1, material = 'generic') {
         S.tone(260, .045, .018 * a, 'square', 1.08);
         return;
     }
+    if(type==='chest_close'){
+        if(S.playSample('chest_close',.85*a,.92+Math.random()*.08))return;
+        S.playSample('chest',.40*a,.75);return;
+    }
+    if(type==='bat_shriek'||type==='bat_wings'||type==='jumpscare'){
+        if(S.playSample(type,type==='jumpscare'?.95*a:.60*a,.92+Math.random()*.14))return;
+        S.noiseBurst(.18,.09*a,1400);return;
+    }
+    if(type==='wolf_bark'){
+        if(S.playSample('wolf_bark_1',.72*a,.85+Math.random()*.22))return;
+        S.playSample('growl',.52*a,.91);return;
+    }
     if (type === 'chest') {
-        if (S.playSample('chest', .78 * a, .95 + Math.random() * .08))
+        if (S.playSample('chest_open', .9 * a, .95 + Math.random() * .08))
             return;
         S.tone(118, .16, .05 * a, 'triangle', .62);
         return;
@@ -364,7 +380,7 @@ S.ambientAudioTick = function ambientAudioTick(dt, night) {
     if (S.audio.eveningLoop)
         S.audio.eveningLoop.g.gain.value = S.lerp(S.audio.eveningLoop.g.gain.value, .46 * eveningLevel, .025);
     if (S.audio.musicLoop)
-        S.audio.musicLoop.g.gain.value = S.lerp(S.audio.musicLoop.g.gain.value, .13 * (.3 + night * .95), .018);
+        S.audio.musicLoop.g.gain.value = S.lerp(S.audio.musicLoop.g.gain.value, .165 * (.72 + night * .36), .018);
     if (S.audio.rainLoop)
         S.audio.rainLoop.g.gain.value = S.lerp(S.audio.rainLoop.g.gain.value, S.weatherMode === 'rain' ? .18 + S.weatherIntensity * .60 : .00001, S.clamp(dt * 1.7, 0, 1));
     if (S.audio.windLoop)

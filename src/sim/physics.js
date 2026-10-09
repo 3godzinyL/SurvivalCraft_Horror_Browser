@@ -1,6 +1,13 @@
 // NightCraft V15 · native ES module (sim/physics.js); installs into the explicit shared state.
 export function install(S) {
-S.sunLevel = function sunLevel() { const ph = (S.worldSeconds % S.DAY_SECONDS) / S.DAY_SECONDS; return S.clamp((Math.sin((ph - .25) * Math.PI * 2) + .16) / 1.16, 0, 1); };
+S.sunLevel = function sunLevel() {
+    const h = ((S.worldSeconds % S.DAY_SECONDS) + S.DAY_SECONDS) % S.DAY_SECONDS / S.DAY_SECONDS * 24;
+    const smooth = t => t*t*(3-2*t);
+    if (h < 5.4 || h >= 21.2) return .045;
+    if (h < 7.15) return .045 + .955*smooth((h-5.4)/1.75);
+    if (h < 19) return 1;
+    return 1 - .955*smooth((h-19)/2.2);
+};
 
 S.nightLevel = function nightLevel() { return 1 - S.sunLevel(); };
 
@@ -56,11 +63,13 @@ S.wearHeldTool = function wearHeldTool(amount = 1) {
     const st = S.player.slots[S.player.selected], def = st ? S.itemDefs[st.id] : null;
     if (!def?.durability || def.kind !== 'tool')
         return;
-    st.wear = (st.wear || 0) + amount;
+    st.wear = Math.max(0, (st.wear || 0) + Math.max(0, amount));
     if (st.wear >= def.durability) {
         S.player.slots[S.player.selected] = null;
         S.showMessage(`${def.name} uległ zniszczeniu!`, 2);
         S.sfx('break', .5, 'wood');
+        S.mineAmount = 0;
+        S.mineTargetKey = '';
     }
     S.refreshHotbar();
 };
@@ -102,12 +111,24 @@ S.breakBlockByPlayer = function breakBlockByPlayer(hit) {
         }
     }
     S.fortifications.delete(brokenKey);
+    S.fallenLogDamage?.delete(brokenKey);
+    if(S.chopTreeRoot?.(hit)){
+        S.player.blocksMined++;S.wearHeldTool(.65);S.grantXP(2);return true;
+    }
     S.setBlock(hit.x, hit.y, hit.z, S.B.AIR);
     S.player.blocksMined++;
-    S.wearHeldTool(1);
+    S.wearHeldTool(hit.id === S.B.IRON || hit.id === S.B.GOLD ? .7 : .45);
     S.grantXP(hit.id === S.B.IRON || hit.id === S.B.GOLD ? 6 : hit.id === S.B.COAL ? 4 : 1);
     if (def.drop)
         S.dropStackFromBlock({ id: def.drop, count: 1 }, hit.x, hit.y, hit.z, 1);
+    // Harvestable botanical loot. Flower rarities follow their own RNG pools.
+    if ([S.B.TALLGRASS,S.B.FERN,S.B.REEDS,S.B.BUSH,S.B.DRY_BUSH].includes(hit.id) && Math.random()<.74)
+        S.dropStackFromBlock({id:'plant_fiber',count:1+Math.floor(Math.random()*2)},hit.x,hit.y,hit.z,.8);
+    if ([S.B.RED_FLOWER,S.B.WHITE_FLOWER,S.B.BLUE_FLOWER,S.B.YELLOW_FLOWER,S.B.HEATHER,S.B.MUSHROOM].includes(hit.id)) {
+        const roll=Math.random(), id=hit.id===S.B.RED_FLOWER && roll<.19 ? 'blood_petal' : (hit.id===S.B.WHITE_FLOWER||hit.id===S.B.BLUE_FLOWER) && roll<.31 ? 'moonflower':'field_herbs';
+        S.dropStackFromBlock({id,count:1},hit.x,hit.y,hit.z,.8);
+        if(id==='blood_petal')S.showMessage('RZADKIE ZIOŁO · KRWAWY PŁATEK',2);
+    }
     if ([S.B.LEAVES, S.B.PINELEAVES, S.B.BIRCHLEAVES, S.B.DARKLEAVES, S.B.AUTUMNLEAVES, S.B.WILLOWLEAVES, S.B.POPLARLEAVES, S.B.MIMOSALEAVES].includes(hit.id) && Math.random() < .24)
         S.dropStackFromBlock({ id: 'berries', count: 1 }, hit.x, hit.y, hit.z, .75);
     const breakMat = S.soundMaterialForBlock(hit.id);
@@ -124,6 +145,7 @@ S.updateMining = function updateMining(dt) {
     if (!S.input.mouseLeft || S.paused) {
         S.mineAmount = 0;
         S.mineTargetKey = '';
+        S.treeChopAim=null;
         S.setMiningHud(false);
         return;
     }
@@ -131,6 +153,7 @@ S.updateMining = function updateMining(dt) {
         S.attackEnemy();
         S.mineAmount = 0;
         S.mineTargetKey = '';
+        S.treeChopAim=null;
         S.setMiningHud(false);
         return;
     }
@@ -138,9 +161,17 @@ S.updateMining = function updateMining(dt) {
     if (!hit || hit.id === S.B.BEDROCK || hit.id === S.B.WATER) {
         S.mineAmount = 0;
         S.mineTargetKey = '';
+        S.treeChopAim=null;
         S.setMiningHud(false);
         return;
     }
+    if(!S.canMineWithEquipped(hit.id)) {
+        S.mineAmount=0;S.mineTargetKey='';S.treeChopAim=null;S.setMiningHud(false);
+        if(!S.miningWarningTimer || S.miningWarningTimer<=0){S.showMessage('KAMIEŃ I RUDY: WYMAGANY KILOF',1.1);S.miningWarningTimer=1.8;}
+        S.miningWarningTimer-=dt;
+        return;
+    }
+    S.miningWarningTimer=0;
     const key = S.editKey(hit.x, hit.y, hit.z);
     if (key !== S.mineTargetKey) {
         S.mineTargetKey = key;
@@ -148,13 +179,35 @@ S.updateMining = function updateMining(dt) {
         S.mineParticleTimer = 0;
         S.player.toolSwing = .45;
     }
-    const def = S.blockDefs[hit.id], need = S.miningSecondsFor(hit.id, hit.x, hit.y, hit.z);
+    const def = S.blockDefs[hit.id], ore = hit.id === S.B.IRON || hit.id === S.B.GOLD;
+    const tool = S.itemDefs[S.selectedItem()] || {};
+    const baseNeed = S.miningSecondsFor(hit.id, hit.x, hit.y, hit.z) * 1.56;
+    const need = Math.max(.54, ore && tool.tier === 'wood' ? Math.max(22, baseNeed) : baseNeed);
+    const fallenDamage = S.fallenLogDamage?.get(key) || 0;
+    if (S.mineAmount === 0 && fallenDamage > 0) S.mineAmount = fallenDamage;
+    S.sampleTreeChopAim?.(hit,dt);
     S.mineAmount += dt / need;
+    // Continuous durability cost, not just one point after breaking the block.
+    // A wooden pickaxe on iron/gold incurs severe wear even when the attempt
+    // is interrupted; stronger pickaxes are faster and last longer.
+    if (tool.kind === 'tool') {
+        const rate = ore ? (tool.tier === 'wood' ? 6.8 : tool.tier === 'gold' ? 1.65 : 1.0)
+            : tool.tool === def.tool ? .32 : .80;
+        S.mineWearTimer = (S.mineWearTimer || 0) + dt * rate;
+        if (S.mineWearTimer >= .55) {
+            const spend = S.mineWearTimer;
+            S.mineWearTimer = 0;
+            S.wearHeldTool(spend);
+            if (!S.selectedItem() || !S.itemDefs[S.selectedItem()]?.tool) {
+                S.mineAmount = 0; S.mineTargetKey = ''; S.setMiningHud(false); return;
+            }
+        }
+    }
     S.setMiningHud(true, hit);
     S.mineParticleTimer -= dt;
     S.player.toolSwing = Math.max(S.player.toolSwing, .24 + Math.sin(performance.now() * .02) * .05);
     if (S.mineParticleTimer <= 0) {
-        S.mineParticleTimer = .065 + Math.random() * .045;
+        S.mineParticleTimer = .23 + Math.random() * .115;
         const mineMat = S.soundMaterialForBlock(hit.id);
         S.spawnDebris(hit.x, hit.y, hit.z, hit.id, S.mineAmount < .12 ? 4 : 2, false);
         S.sfx('mine', .72, mineMat);
@@ -165,6 +218,7 @@ S.updateMining = function updateMining(dt) {
         S.breakBlockByPlayer(hit);
         S.mineAmount = 0;
         S.mineTargetKey = '';
+        S.treeChopAim=null;
         S.setMiningHud(false);
     }
 };

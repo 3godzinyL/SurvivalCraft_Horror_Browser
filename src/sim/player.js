@@ -45,6 +45,8 @@ S.ruinChests = new Map();
 S.bedrolls = new Map();
 
 S.respawnSite = null;
+S.lastDeathPosition = null;
+S.waypoint = null;
 
 S.armorSlots = { head: null, chest: null, legs: null, feet: null };
 
@@ -219,8 +221,12 @@ S.equippedPowerFor = function equippedPowerFor(blockId) {
     const item = S.itemDefs[S.selectedItem()] || {}, need = S.blockDefs[blockId]?.tool;
     if (!need)
         return item.tool ? 1.10 : .92;
-    if (item.tool === need)
+    if (item.tool === need) {
+        const tier = item.tier || 'wood', ore = blockId === S.B.IRON || blockId === S.B.GOLD;
+        if (ore && tier === 'wood') return .20; // slow but possible; metal takes its toll
+        if (ore && tier === 'gold') return 2.65;
         return item.power || 2.6;
+    }
     // Wrong tool and bare hand always work, but they are clearly slower. Wooden
     // tools are deliberately early-game tools instead of instant block erasers.
     if (item.tool)
@@ -228,7 +234,13 @@ S.equippedPowerFor = function equippedPowerFor(blockId) {
     return .68;
 };
 
-S.miningSecondsFor = function miningSecondsFor(blockId, x = 0, y = 0, z = 0) { return Math.max(.11, S.blockHardnessAt(x, y, z, blockId) * 1.12 / Math.max(.05, S.equippedPowerFor(blockId))); };
+S.canMineWithEquipped = function canMineWithEquipped(blockId) {
+    const d=S.blockDefs[blockId]||{}, tool=S.itemDefs[S.selectedItem()]||{};
+    if(d.material==='stone'||d.material==='ore'||d.tool==='pickaxe')return tool.tool==='pickaxe';
+    return true;
+};
+
+S.miningSecondsFor = function miningSecondsFor(blockId, x = 0, y = 0, z = 0) { return Math.max(.25, S.blockHardnessAt(x, y, z, blockId) * 1.82 / Math.max(.05, S.equippedPowerFor(blockId))); };
 
 S.heldDamage = function heldDamage() { const it = S.itemDefs[S.selectedItem()] || {}; return it.damage || 3; };
 
@@ -236,7 +248,20 @@ S.lookDir = function lookDir() { const cp = Math.cos(S.player.pitch); return [Ma
 
 S.eyePos = function eyePos() { return [S.player.pos[0], S.player.pos[1] + S.player.eye, S.player.pos[2]]; };
 
-S.cameraEyePos = function cameraEyePos() { const base = S.eyePos(), right = [Math.cos(S.player.yaw), 0, Math.sin(S.player.yaw)], sh = S.player.cameraShake || 0, t = performance.now() * .045; return [base[0] + right[0] * S.player.sway * .45 + Math.sin(t * 1.7) * sh * .045, base[1] + S.player.bob - S.player.impact * .028 + Math.cos(t * 2.1) * sh * .028, base[2] + right[2] * S.player.sway * .45 + Math.cos(t * 1.3) * sh * .045]; };
+S.cameraEyePos = function cameraEyePos() {
+    const base=S.eyePos(),right=[Math.cos(S.player.yaw),0,Math.sin(S.player.yaw)];
+    const sh=S.player.cameraShake||0,t=performance.now()*.045;
+    if (!S.cameraMode) return [base[0]+right[0]*S.player.sway*.45+Math.sin(t*1.7)*sh*.045,base[1]+S.player.bob-S.player.impact*.028+Math.cos(t*2.1)*sh*.028,base[2]+right[2]*S.player.sway*.45+Math.cos(t*1.3)*sh*.045];
+    const sign=S.cameraMode===1 ? -1 : 1,dir=S.lookDir(),dist=sign===-1?4.15:3.85;
+    const offset=[dir[0]*dist*sign, .65+dir[1]*dist*.34*sign, dir[2]*dist*sign];
+    let travel=dist;
+    for(let d=.2;d<dist;d+=.15){
+        const p=[base[0]+offset[0]*d/dist,base[1]+offset[1]*d/dist,base[2]+offset[2]*d/dist];
+        const id=S.getBlock(Math.floor(p[0]),Math.floor(p[1]),Math.floor(p[2]));
+        if(S.blockDefs[id]?.solid&&!S.blockDefs[id]?.decor){travel=Math.max(.2,d-.25);break;}
+    }
+    return [base[0]+offset[0]*travel/dist,base[1]+offset[1]*travel/dist,base[2]+offset[2]*travel/dist];
+};
 
 S.playerAabbAt = function playerAabbAt(x, y, z) { return [x - S.player.width, y, z - S.player.width, x + S.player.width, y + S.player.height, z + S.player.width]; };
 
@@ -417,9 +442,10 @@ S.useSelected = function useSelected() {
         S.showMessage(f.open ? 'Drzwi otwarte.' : 'Drzwi zamknięte.', .8);
         return;
     }
-    const id = S.selectedItem(), def = S.itemDefs[id];
-    if (!def)
-        return;
+    const selected=S.selectedItem(),main=S.itemDefs[selected];
+    const fromOffhand=S.offhandItem()==='torch' && (!main || (main.place===undefined && !main.food && !main.heal));
+    const id=fromOffhand?'torch':selected,def=S.itemDefs[id];
+    if (!def)return;
     if (def.food && S.countItem(id) > 0) {
         S.removeItem(id, 1);
         S.player.hunger = S.clamp(S.player.hunger + def.food, 0, 100);
@@ -431,7 +457,7 @@ S.useSelected = function useSelected() {
     if (def.heal && S.countItem(id) > 0) {
         S.removeItem(id, 1);
         S.player.health = S.clamp(S.player.health + def.heal, 0, 100);
-        S.sfx('eat');
+        S.sfx('craft',.45);
         S.showMessage(`${def.name}: HP +${def.heal}`);
         return;
     }
@@ -441,6 +467,9 @@ S.useSelected = function useSelected() {
         const x = hit.x + hit.normal[0], y = hit.y + hit.normal[1], z = hit.z + hit.normal[2];
         if (y <= 0 || y >= S.WORLD_H - 1)
             return;
+        if(def.place===S.B.CAMPFIRE && (hit.normal[1]!==1 || !S.blockDefs[S.getBlock(x,y-1,z)]?.solid)){
+            S.showMessage('Ognisko musi stać na stabilnym podłożu.');return;
+        }
         const a = S.playerAabbAt(S.player.pos[0], S.player.pos[1], S.player.pos[2]);
         if (x + 1 > a[0] && x < a[3] && y + 1 > a[1] && y < a[4] && z + 1 > a[2] && z < a[5]) {
             S.showMessage('Nie możesz postawić bloku w sobie.');
@@ -448,15 +477,29 @@ S.useSelected = function useSelected() {
         }
         if (S.getBlock(x, y, z) === S.B.AIR || S.getBlock(x, y, z) === S.B.WATER) {
             S.setBlock(x, y, z, def.place);
-            S.removeItem(id, 1);
+            if(def.place===S.B.TORCH){
+                const n=hit.normal;
+                S.torchMounts?.set(S.editKey(x,y,z),[n[0],n[1],n[2]]);
+            }
+            if(fromOffhand){
+                S.player.offhand.count--;
+                if(S.player.offhand.count<=0)S.player.offhand=null;
+                S.refreshInventoryUI?.();S.refreshHotbar?.();
+            }else S.removeItem(id,1);
             const key = S.fortKey(x, y, z);
+            if (def.place === S.B.CAMPFIRE){
+                S.showMessage('Ognisko rozpalone · światło i ciepło.',1.5);
+                S.emitPlayerNoise('fire_light',18,.85,[x+.5,y+.25,z+.5],1.5,'wood');
+            }
             if (def.place === S.B.BEDROLL) {
                 S.bedrolls.set(key, { orientation: Math.round(S.player.yaw / (Math.PI / 2)) * (Math.PI / 2) });
                 S.showMessage('Śpiwór rozłożony. PPM: zapisz odrodzenie i prześpij noc.', 2.4);
             }
             if (S.isUpgradeableBlockId(def.place)) {
-                const t = S.FORT_TIERS[0];
-                S.fortifications.set(key, { tier: 0, hp: t.maxHp, maxHp: t.maxHp, type: S.blockDefs[def.place]?.construction || 'wall', orientation: Math.round(S.player.yaw / (Math.PI / 2)) * (Math.PI / 2), open: false, lastHit: 0 });
+                // Use the single source of fortification metadata. Reinforced
+                // walls start with their own L0 HP and family, never legacy HP80.
+                const f=S.ensureFortification(x,y,z,def.place,true);
+                if(f)f.orientation=Math.round(S.player.yaw/(Math.PI/2))*(Math.PI/2);
             }
             if (def.place === S.B.FURNACE && !S.furnaces.has(key))
                 S.furnaces.set(key, { input: null, fuel: null, output: null, burn: 0, burnMax: 0, progress: 0 });
@@ -486,6 +529,7 @@ S.hurtPlayer = function hurtPlayer(amount, source = 'coś w ciemności') {
 };
 
 S.killPlayer = function killPlayer(source) {
+    S.lastDeathPosition = [...S.player.pos].map(Math.floor);
     S.dead = true;
     S.paused = true;
     S.input.mouseLeft = false;

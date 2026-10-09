@@ -90,7 +90,7 @@ S.wolfSightState = function wolfSightState(e, dist) {
         range += 3.5;
     else if (planar < .35)
         range -= 3;
-    const fovDot = deep ? .30 : .42, near = dl < 4.2, inCone = dot > fovDot || near, los = dl < range && inCone && S.wolfLineOfSight(e), proximity = S.clamp(1 - dl / range, 0, 1), angle = near ? 1 : S.clamp((dot - fovDot) / (1 - fovDot), 0, 1);
+    const fovDot = deep ? .14 : .23, near = dl < 7.0, inCone = dot > fovDot || near, los = dl < range && inCone && S.wolfLineOfSight(e), proximity = S.clamp(1 - dl / range, 0, 1), angle = near ? 1 : S.clamp((dot - fovDot) / (1 - fovDot), 0, 1);
     const motion = planar > 5.2 ? 1.20 : planar > 1.2 ? 1 : .70, light = torch ? 1.34 : 1, visibility = los ? S.clamp((.14 + proximity * .72 + angle * .32) * motion * light, 0, 1.55) : 0;
     return { dot, range, los, inCone, detecting: los, proximity, deep, visibility, fovDot, near };
 };
@@ -135,7 +135,7 @@ S.updateWolfAwareness = function updateWolfAwareness(e, dt, dist) {
         e.searchTimer = 0;
     const v = S.wolfSightState(e, dist), heard = S.strongestPlayerNoiseForWolf(e);
     if (v.detecting) {
-        const rate = .13 + v.visibility * .77 + (v.near ? 6.2 : 0);
+        const rate = .40 + v.visibility * 1.7 + (v.near ? 8.5 : 0);
         e.sightAwareness = S.clamp(e.sightAwareness + dt * rate, 0, 1);
         e.lastSeen = [S.player.pos[0], S.player.pos[2]];
         if (e.spotted)

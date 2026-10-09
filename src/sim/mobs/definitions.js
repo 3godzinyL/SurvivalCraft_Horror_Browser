@@ -10,14 +10,14 @@ S.spawnEnemy = function spawnEnemy(type, x, z, adminSpawned = false, extra = {})
     const d = S.enemyDefs[type];
     if (!d)
         return null;
-    const y = S.findSurface(Math.floor(x), Math.floor(z));
+    const y = extra.caveSpawn ? extra.pos[1] : S.findSurface(Math.floor(x), Math.floor(z));
     if (y >= S.WORLD_H - 2)
         return null;
     const feet = S.getBlock(Math.floor(x), Math.floor(y + .08), Math.floor(z)), ground = S.getBlock(Math.floor(x), Math.floor(y - .12), Math.floor(z));
-    if (feet === S.B.WATER || ground === S.B.WATER || ground === S.B.ICE)
+    if (!extra.caveSpawn && (feet === S.B.WATER || ground === S.B.WATER || ground === S.B.ICE))
         return null;
     const initialFacing = Math.random() * Math.PI * 2;
-    const e = { type, pos: [x, y, z], velY: 0, hp: d.hp, maxHp: d.hp, attack: 0, wander: initialFacing, wanderTimer: 1 + Math.random() * 4, flash: 0, phase: Math.random() * Math.PI * 2, gait: 0, age: 0, stuck: 0, last: [x, z], facing: initialFacing, renderFacing: initialFacing, voice: 1 + Math.random() * 4, adminSpawned, awareness: adminSpawned ? 1 : 0, sightAwareness: adminSpawned ? 1 : 0, hearingAwareness: 0, spotted: !!adminSpawned, track: adminSpawned ? 30 : 0, packId: extra.packId || 0, lastSeen: [x, z], investigatePos: null, heardTimer: 0, searchTimer: 0, lastNoiseSeq: 0, lookTimer: .35 + Math.random() * 1.4, lookOffset: 0, lookTarget: 0, lookHold: 0, navPath: [], navTimer: Math.random() * .55, navGoal: null, searchStep: 0, roamPause: 0, alertMemory: 0, ...extra };
+    const e = { huntSlot:S.predatorSequence++ % 19, type, pos: [x, y, z], velY: 0, hp: d.hp, maxHp: d.hp, attack: 0, wander: initialFacing, wanderTimer: 1 + Math.random() * 4, flash: 0, phase: Math.random() * Math.PI * 2, gait: 0, age: 0, stuck: 0, last: [x, z], facing: initialFacing, renderFacing: initialFacing, voice: 1 + Math.random() * 4, adminSpawned, awareness: adminSpawned ? 1 : 0, sightAwareness: adminSpawned ? 1 : 0, hearingAwareness: 0, spotted: !!adminSpawned, track: adminSpawned ? 30 : 0, packId: extra.packId || 0, lastSeen: [x, z], investigatePos: null, heardTimer: 0, searchTimer: 0, lastNoiseSeq: 0, lookTimer: .35 + Math.random() * 1.4, lookOffset: 0, lookTarget: 0, lookHold: 0, navPath: [], navTimer: Math.random() * .55, navGoal: null, searchStep: 0, roamPause: 0, alertMemory: 0, fleeTimer: 0, fleeGoal: null, fleeOrigin: null, fleeGoalTimer: 0, ...extra };
     S.enemies.push(e);
     return e;
 };
@@ -25,14 +25,14 @@ S.spawnEnemy = function spawnEnemy(type, x, z, adminSpawned = false, extra = {})
 S.choosePassiveSpawnType = function choosePassiveSpawnType(x, z) {
     const biome = S.biomeAt(Math.floor(x), Math.floor(z)), r = Math.random();
     if (['forest', 'birch', 'poplar_grove', 'autumn', 'darkwood', 'old_growth', 'mist_forest'].includes(biome))
-        return r < .22 ? 'deer' : r < .39 ? 'doe' : r < .51 ? 'fox' : r < .68 ? 'rabbit' : r < .82 ? 'horse' : 'chicken';
+        return r < .13 ? 'boar' : r < .29 ? 'deer' : r < .43 ? 'doe' : r < .55 ? 'fox' : r < .70 ? 'rabbit' : r < .85 ? 'horse' : 'chicken';
     if (['meadow', 'flower_meadow', 'plains', 'riverlands'].includes(biome))
-        return r < .22 ? 'cow' : r < .39 ? 'horse' : r < .55 ? 'deer' : r < .70 ? 'sheep' : r < .84 ? 'rabbit' : 'chicken';
+        return r < .10 ? 'boar' : r < .29 ? 'cow' : r < .44 ? 'horse' : r < .59 ? 'deer' : r < .73 ? 'sheep' : r < .86 ? 'rabbit' : 'chicken';
     if (['taiga', 'spruce_valley', 'cold_plains', 'tundra'].includes(biome))
         return r < .30 ? 'moose' : r < .55 ? 'deer' : r < .77 ? 'rabbit' : 'fox';
     if (['swamp', 'marsh', 'willow_swamp'].includes(biome))
-        return r < .48 ? 'rabbit' : r < .73 ? 'deer' : 'chicken';
-    return r < .40 ? 'rabbit' : r < .68 ? 'deer' : r < .84 ? 'horse' : 'chicken';
+        return r < .14 ? 'boar' : r < .52 ? 'rabbit' : r < .77 ? 'deer' : 'chicken';
+    return r < .075 ? 'boar' : r < .41 ? 'rabbit' : r < .69 ? 'deer' : r < .85 ? 'horse' : 'chicken';
 };
 
 S.chooseSpawnType = function chooseSpawnType(nightFactor, x, z) {
@@ -84,6 +84,27 @@ S.spawnAroundPlayer = function spawnAroundPlayer(nightFactor) {
     const hour = S.currentWorldHour(), afterMidnight = hour < 6, base = S.difficulty === 'insane' ? 22 : S.difficulty === 'nightmare' ? 18 : 15, max = base + Math.floor(nightFactor * 8);
     if (S.enemies.length >= max)
         return 0;
+    // Underground encounters use the real player's cavern elevation instead
+    // of surface spawns that would leave a monster stranded above the ceiling.
+    if(S.caveIsDeep?.() && S.enemies.filter(e=>e.type==='hollowed').length<2 && Math.random()<.62)
+        return S.spawnCaveHollowed?.() ? 1 : 0;
+    // Rare blind guardian at ore outcrops, even in broad daylight. Only an
+    // already-loaded and truly walkable surface may be used for spawning.
+    if((S.worldgenVersion||16)>=22 && S.outcropForCell &&
+       S.enemies.filter(e=>e.type==='hollowed'&&e.surfaceOre).length<1 && Math.random()<.22){
+        const cx=Math.floor(S.player.pos[0]/S.OUTCROP_CELL),cz=Math.floor(S.player.pos[2]/S.OUTCROP_CELL);
+        for(let iz=cz-1;iz<=cz+1;iz++)for(let ix=cx-1;ix<=cx+1;ix++){
+            const o=S.outcropForCell(ix,iz);if(!o)continue;
+            const dist=Math.hypot(o.x-S.player.pos[0],o.z-S.player.pos[2]);
+            if(dist<19||dist>58)continue;
+            const a=Math.random()*Math.PI*2,x=Math.floor(o.x+Math.cos(a)*5),z=Math.floor(o.z+Math.sin(a)*5);
+            if(!S.chunks.has(S.chunkKey(S.floorDiv(x,S.CHUNK),S.floorDiv(z,S.CHUNK))))continue;
+            const y=S.terrainHeight(x,z);
+            if(S.peekLoadedBlock(x,y,z)!==S.B.AIR||S.peekLoadedBlock(x,y+1,z)!==S.B.AIR)continue;
+            const e=S.spawnEnemy('hollowed',x+.5,z+.5,false,{surfaceOre:true,pos:[x+.5,y,z+.5],listenTimer:.3,noiseMemory:0,navPath:[]});
+            if(e)return 1;
+        }
+    }
     let tries = 8;
     while (tries--) {
         const ang = Math.random() * Math.PI * 2, dist = (afterMidnight && nightFactor > .5 ? 26 : 30) + Math.random() * (afterMidnight ? 34 : 28), x = S.player.pos[0] + Math.cos(ang) * dist, z = S.player.pos[2] + Math.sin(ang) * dist;
@@ -122,10 +143,31 @@ S.attackEnemy = function attackEnemy() {
     else if (held.tool === 'axe')
         dmg = held.damage || 5;
     h.e.hp -= dmg;
+    // A wounded herbivore must immediately run even if the knockback ends
+    // while it is stuck against a block. Keep a threat position in memory.
+    if (S.enemyDefs[h.e.type]?.passive && h.e.hp > 0) {
+        h.e.fleeTimer = Math.max(8.5,h.e.fleeTimer || 0);
+        h.e.fleeOrigin = [S.player.pos[0],S.player.pos[2]];
+        h.e.fleeGoal = null;
+        h.e.fleeGoalTimer = 0;
+        h.e.navPath = [];
+        h.e.navGoal = null;
+        h.e.navTimer = 0;
+        h.e.navHalt = 0;
+        h.e.roamPause = 0;
+        h.e.stuck = 0;
+    }
+
+    const awayX=h.e.pos[0]-S.player.pos[0],awayZ=h.e.pos[2]-S.player.pos[2],len=Math.max(.1,Math.hypot(awayX,awayZ));
+    const impact=S.enemyDefs[h.e.type]?.flying?2.0:(S.enemyDefs[h.e.type]?.passive?2.1:3.8);
+    h.e.knockVel=[awayX/len*impact,awayZ/len*impact];
+    h.e.velY=Math.max(h.e.velY||0,S.enemyDefs[h.e.type]?.flying?0:2.4);
+    h.e.attackCooldown=Math.max(h.e.attackCooldown||0,.27);
     S.wearHeldTool(1);
     h.e.flash = .15;
     S.spawnBlood(h.e.pos, 8 + Math.floor(dmg * .35));
     S.sfx('hit');
+    S.cameraShake=Math.max(S.cameraShake||0,.13);
     if (h.e.hp <= 0) {
         const deadType = h.e.type, i = S.enemies.indexOf(h.e);
         if (i >= 0)

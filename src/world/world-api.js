@@ -1,5 +1,16 @@
 // NightCraft V15 · native ES module (world/world-api.js); installs into the explicit shared state.
 export function install(S) {
+// Non-generating lookup for meshing: the mesher MUST NOT synchronously
+// create neighbouring chunks while computing border faces at distance 12.
+S.peekLoadedBlock = function peekLoadedBlock(x,y,z) {
+    x=Math.floor(x);y=Math.floor(y);z=Math.floor(z);
+    if(y<0 || y>=S.WORLD_H)return S.B.AIR;
+    const cx=S.floorDiv(x,S.CHUNK),cz=S.floorDiv(z,S.CHUNK);
+    const c=S.chunks.get(S.chunkKey(cx,cz));
+    if(!c)return S.B.AIR;
+    return c.data[S.idx3(S.mod(x,S.CHUNK),y,S.mod(z,S.CHUNK))];
+};
+
 S.getBlock = function getBlock(x, y, z) {
     x = Math.floor(x);
     y = Math.floor(y);
@@ -31,8 +42,11 @@ S.setBlock = function setBlock(x, y, z, id, record = true) {
     if (S.mod(z, S.CHUNK) === S.CHUNK - 1)
         S.markDirty(cx, cz + 1);
     const key = S.editKey(x, y, z);
+    S.fallenLogDamage?.delete(key);
+    if(id!==S.B.TORCH)S.torchMounts?.delete(key);
     if (id !== S.B.FURNACE && S.furnaces.has(key))
         S.furnaces.delete(key);
+    if(S.enemyBlockDamage && S.enemyBlockDamage.has(key)) S.enemyBlockDamage.delete(key);
     if (!S.isUpgradeableBlockId(id) && S.fortifications.has(key))
         S.fortifications.delete(key);
     return true;

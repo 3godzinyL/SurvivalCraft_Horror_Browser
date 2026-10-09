@@ -1,0 +1,4 @@
+{
+  "server": "",
+  "comment": "V24: gracze wklejaja adres HTTPS ngrok po kliknieciu START ONLINE, np. https://twoj-serwer.ngrok-free.app. Opcjonalnie mozna tu zapisac staly adres domyslny."
+}
