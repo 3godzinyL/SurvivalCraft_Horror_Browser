@@ -1,0 +1,553 @@
+{
+  "dirt": {
+    "place": 2,
+    "kind": "block"
+  },
+  "stone": {
+    "place": 3,
+    "kind": "block"
+  },
+  "sand": {
+    "place": 4,
+    "kind": "block"
+  },
+  "gravel": {
+    "place": 14,
+    "kind": "block"
+  },
+  "mud": {
+    "place": 15,
+    "kind": "block"
+  },
+  "darkstone": {
+    "place": 16,
+    "kind": "block"
+  },
+  "wood": {
+    "place": 5,
+    "kind": "block"
+  },
+  "pinewood": {
+    "place": 17,
+    "kind": "block"
+  },
+  "deadwood": {
+    "place": 19,
+    "kind": "block"
+  },
+  "leaves": {
+    "place": 6,
+    "kind": "block"
+  },
+  "pineleaves": {
+    "place": 18,
+    "kind": "block"
+  },
+  "snow": {
+    "place": 20,
+    "kind": "block"
+  },
+  "clay": {
+    "place": 21,
+    "kind": "block"
+  },
+  "slate": {
+    "place": 22,
+    "kind": "block"
+  },
+  "roots": {
+    "place": 23,
+    "kind": "block"
+  },
+  "birchwood": {
+    "place": 24,
+    "kind": "block"
+  },
+  "birchleaves": {
+    "place": 25,
+    "kind": "block"
+  },
+  "darkwood": {
+    "place": 26,
+    "kind": "block"
+  },
+  "darkleaves": {
+    "place": 27,
+    "kind": "block"
+  },
+  "autumnleaves": {
+    "place": 28,
+    "kind": "block"
+  },
+  "ice": {
+    "place": 35,
+    "kind": "block"
+  },
+  "cobble": {
+    "place": 36,
+    "kind": "block"
+  },
+  "chest": {
+    "place": 37,
+    "kind": "block"
+  },
+  "loam": {
+    "place": 38,
+    "kind": "block"
+  },
+  "podzol": {
+    "place": 39,
+    "kind": "block"
+  },
+  "silt": {
+    "place": 40,
+    "kind": "block"
+  },
+  "peat": {
+    "place": 41,
+    "kind": "block"
+  },
+  "limestone": {
+    "place": 42,
+    "kind": "block"
+  },
+  "granite": {
+    "place": 43,
+    "kind": "block"
+  },
+  "basalt": {
+    "place": 44,
+    "kind": "block"
+  },
+  "marble": {
+    "place": 45,
+    "kind": "block"
+  },
+  "willowwood": {
+    "place": 46,
+    "kind": "block"
+  },
+  "willowleaves": {
+    "place": 47,
+    "kind": "block"
+  },
+  "mossydirt": {
+    "place": 51,
+    "kind": "block"
+  },
+  "drygrass": {
+    "place": 52,
+    "kind": "block"
+  },
+  "forestgrass": {
+    "place": 53,
+    "kind": "block"
+  },
+  "frostgrass": {
+    "place": 54,
+    "kind": "block"
+  },
+  "sandstone": {
+    "place": 55,
+    "kind": "block"
+  },
+  "redsand": {
+    "place": 56,
+    "kind": "block"
+  },
+  "mossystone": {
+    "place": 57,
+    "kind": "block"
+  },
+  "poplarwood": {
+    "place": 58,
+    "kind": "block"
+  },
+  "poplarleaves": {
+    "place": 59,
+    "kind": "block"
+  },
+  "mimosawood": {
+    "place": 60,
+    "kind": "block"
+  },
+  "mimosaleaves": {
+    "place": 61,
+    "kind": "block"
+  },
+  "bush": {
+    "place": 62,
+    "kind": "block"
+  },
+  "drybush": {
+    "place": 63,
+    "kind": "block"
+  },
+  "pumpkin": {
+    "place": 64,
+    "kind": "block",
+    "food": 18
+  },
+  "cactus": {
+    "place": 65,
+    "kind": "block"
+  },
+  "riverrock": {
+    "place": 66,
+    "kind": "block"
+  },
+  "cavedirt": {
+    "place": 67,
+    "kind": "block"
+  },
+  "stone_bricks": {
+    "place": 68,
+    "kind": "block"
+  },
+  "cracked_bricks": {
+    "place": 69,
+    "kind": "block"
+  },
+  "mossy_bricks": {
+    "place": 70,
+    "kind": "block"
+  },
+  "chiseled_stone": {
+    "place": 71,
+    "kind": "block"
+  },
+  "old_planks": {
+    "place": 72,
+    "kind": "block"
+  },
+  "dark_planks": {
+    "place": 73,
+    "kind": "block"
+  },
+  "rubble": {
+    "place": 74,
+    "kind": "block"
+  },
+  "ash_block": {
+    "place": 75,
+    "kind": "block"
+  },
+  "rune_stone": {
+    "place": 76,
+    "kind": "block"
+  },
+  "weathered_bricks": {
+    "place": 77,
+    "kind": "block"
+  },
+  "old_tiles": {
+    "place": 78,
+    "kind": "block"
+  },
+  "grave_stone": {
+    "place": 79,
+    "kind": "block"
+  },
+  "coal": {
+    "kind": "resource"
+  },
+  "iron": {
+    "kind": "resource"
+  },
+  "gold_ore": {
+    "kind": "resource"
+  },
+  "iron_ingot": {
+    "kind": "resource"
+  },
+  "gold_ingot": {
+    "kind": "resource"
+  },
+  "stick": {
+    "kind": "resource"
+  },
+  "planks": {
+    "place": 10,
+    "kind": "block"
+  },
+  "torch": {
+    "place": 11,
+    "kind": "light"
+  },
+  "furnace": {
+    "place": 81,
+    "kind": "block"
+  },
+  "glass": {
+    "place": 82,
+    "kind": "block"
+  },
+  "smooth_stone": {
+    "place": 83,
+    "kind": "block"
+  },
+  "iron_block": {
+    "place": 84,
+    "kind": "block"
+  },
+  "gold_block": {
+    "place": 85,
+    "kind": "block"
+  },
+  "wood_door": {
+    "place": 86,
+    "kind": "construction",
+    "maxStack": 16
+  },
+  "wood_stairs": {
+    "place": 87,
+    "kind": "construction"
+  },
+  "wood_fence": {
+    "place": 88,
+    "kind": "construction"
+  },
+  "wood_pickaxe": {
+    "tool": "pickaxe",
+    "power": 1.3,
+    "kind": "tool",
+    "tier": "wood",
+    "maxStack": 1
+  },
+  "wood_axe": {
+    "tool": "axe",
+    "power": 1.28,
+    "damage": 5,
+    "kind": "tool",
+    "tier": "wood",
+    "maxStack": 1
+  },
+  "wood_shovel": {
+    "tool": "shovel",
+    "power": 1.42,
+    "kind": "tool",
+    "tier": "wood",
+    "maxStack": 1
+  },
+  "wood_sword": {
+    "tool": "sword",
+    "damage": 7,
+    "kind": "tool",
+    "tier": "wood",
+    "maxStack": 1
+  },
+  "pickaxe": {
+    "tool": "pickaxe",
+    "power": 3.65,
+    "kind": "tool",
+    "tier": "iron",
+    "maxStack": 1
+  },
+  "axe": {
+    "tool": "axe",
+    "power": 3.25,
+    "damage": 9,
+    "kind": "tool",
+    "tier": "iron",
+    "maxStack": 1
+  },
+  "shovel": {
+    "tool": "shovel",
+    "power": 3.7,
+    "kind": "tool",
+    "tier": "iron",
+    "maxStack": 1
+  },
+  "sword": {
+    "tool": "sword",
+    "damage": 15,
+    "kind": "tool",
+    "tier": "iron",
+    "maxStack": 1
+  },
+  "gold_pickaxe": {
+    "tool": "pickaxe",
+    "power": 4.15,
+    "kind": "tool",
+    "tier": "gold",
+    "maxStack": 1
+  },
+  "gold_axe": {
+    "tool": "axe",
+    "power": 3.9,
+    "damage": 10,
+    "kind": "tool",
+    "tier": "gold",
+    "maxStack": 1
+  },
+  "gold_shovel": {
+    "tool": "shovel",
+    "power": 4.25,
+    "kind": "tool",
+    "tier": "gold",
+    "maxStack": 1
+  },
+  "gold_sword": {
+    "tool": "sword",
+    "damage": 13,
+    "kind": "tool",
+    "tier": "gold",
+    "maxStack": 1
+  },
+  "rawmeat": {
+    "food": 21,
+    "hurt": 4,
+    "kind": "food"
+  },
+  "cookedmeat": {
+    "food": 48,
+    "heal": 9,
+    "kind": "food"
+  },
+  "berries": {
+    "food": 11,
+    "heal": 1,
+    "kind": "food"
+  },
+  "bandage": {
+    "heal": 27,
+    "kind": "medical"
+  },
+  "bedroll": {
+    "place": 89,
+    "kind": "camp",
+    "maxStack": 4,
+    "footprint": 2
+  },
+  "__bedroll_footprint": {
+    "maxStack": 1,
+    "internal": true
+  },
+  "leather": {
+    "kind": "resource"
+  },
+  "rabbit_hide": {
+    "kind": "resource"
+  },
+  "scrap": {
+    "kind": "resource"
+  },
+  "rope": {
+    "kind": "resource"
+  },
+  "leather_head": {
+    "kind": "armor",
+    "armorSlot": "head",
+    "armor": 1,
+    "tier": "leather",
+    "maxStack": 1,
+    "durability": 85
+  },
+  "leather_chest": {
+    "kind": "armor",
+    "armorSlot": "chest",
+    "armor": 3,
+    "tier": "leather",
+    "maxStack": 1,
+    "durability": 85
+  },
+  "leather_legs": {
+    "kind": "armor",
+    "armorSlot": "legs",
+    "armor": 2,
+    "tier": "leather",
+    "maxStack": 1,
+    "durability": 85
+  },
+  "leather_feet": {
+    "kind": "armor",
+    "armorSlot": "feet",
+    "armor": 1,
+    "tier": "leather",
+    "maxStack": 1,
+    "durability": 85
+  },
+  "iron_head": {
+    "kind": "armor",
+    "armorSlot": "head",
+    "armor": 2,
+    "tier": "iron",
+    "maxStack": 1,
+    "durability": 190
+  },
+  "iron_chest": {
+    "kind": "armor",
+    "armorSlot": "chest",
+    "armor": 6,
+    "tier": "iron",
+    "maxStack": 1,
+    "durability": 190
+  },
+  "iron_legs": {
+    "kind": "armor",
+    "armorSlot": "legs",
+    "armor": 5,
+    "tier": "iron",
+    "maxStack": 1,
+    "durability": 190
+  },
+  "iron_feet": {
+    "kind": "armor",
+    "armorSlot": "feet",
+    "armor": 2,
+    "tier": "iron",
+    "maxStack": 1,
+    "durability": 190
+  },
+  "reinforced_wood": {
+    "place": 90,
+    "kind": "block"
+  },
+  "reinforced_cobble": {
+    "place": 91,
+    "kind": "block"
+  },
+  "reinforced_stone": {
+    "place": 92,
+    "kind": "block"
+  },
+  "reinforced_iron": {
+    "place": 93,
+    "kind": "block"
+  },
+  "plant_fiber": {
+    "kind": "material",
+    "rarity": "common"
+  },
+  "field_herbs": {
+    "kind": "herb",
+    "rarity": "common"
+  },
+  "moonflower": {
+    "kind": "herb",
+    "rarity": "uncommon"
+  },
+  "blood_petal": {
+    "kind": "herb",
+    "rarity": "rare"
+  },
+  "forest_poultice": {
+    "kind": "medical",
+    "heal": 13,
+    "rarity": "common"
+  },
+  "healing_wrap": {
+    "kind": "medical",
+    "heal": 38,
+    "rarity": "uncommon"
+  },
+  "hunter_salve": {
+    "kind": "medical",
+    "heal": 65,
+    "rarity": "rare"
+  },
+  "campfire": {
+    "place": 94,
+    "kind": "camp"
+  }
+}
