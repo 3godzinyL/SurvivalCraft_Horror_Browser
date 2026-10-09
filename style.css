@@ -240,3 +240,86 @@ body:after{content:"";position:fixed;inset:0;pointer-events:none;z-index:12;back
 .minimap-wrap{right:85px}
 @media(max-width:820px){.minimap-wrap{right:64px}}
 @media(max-width:720px){.inventory-main .inventory-grid{grid-template-columns:repeat(9,minmax(25px,1fr));gap:2px}.inventory-main .inv-item{min-height:55px;padding:2px}.inventory-main .inv-item canvas{max-width:26px}.inventory-main .inv-item.bedroll-wide canvas{max-width:95px;width:90%}}
+
+/* V16 — attached armor instrumentation, gold/brass night navigator */
+.armor-orbs{left:calc(100% - 5px);gap:5px;top:0}
+.armor-orb{width:61px;height:41px;border-radius:15px 23px 23px 15px;flex-direction:column;background:linear-gradient(120deg,#0c150f 0%,#18211b 48%,#080b09 100%);border:1px solid #685639;outline:2px solid #211c12;box-shadow:inset 0 2px 5px #000,inset 0 -3px 5px rgba(201,167,91,.08),0 3px 9px #000;gap:0;justify-content:center}
+.armor-orb b{position:absolute;left:5px;top:8px;font-size:17px;line-height:20px;color:#c8b781;filter:drop-shadow(0 1px 2px #000)}
+.armor-orb small{margin-left:18px;letter-spacing:1.4px;font-size:6px;line-height:12px;color:#9a9a7d}
+.armor-orb em{margin-left:18px;font-size:10px;line-height:12px;color:#d4ac64}
+.armor-orb:before{inset:-2px;border-radius:15px 23px 23px 15px;mask:linear-gradient(#000,#000);background:linear-gradient(90deg,#bf9960 var(--wear),#272b20 var(--wear));clip-path:polygon(0 89%,100% 89%,100% 100%,0 100%)}
+.armor-orb:after{width:25px;height:11px;right:calc(100% + 1px);left:auto;background:linear-gradient(#b19457 0 2px,#142019 2px 9px,#b19457 9px 11px);border:0;z-index:-1}
+.armor-orb.equipped{border-color:#ceae6d}.armor-orb.warn{border-color:#c6634a}.armor-orb.warn em{color:#f4b09c}
+@media(max-width:820px){.armor-orbs{left:calc(100% - 5px)}.armor-orb{width:54px;height:40px}}
+/* The logbook opens inside the inventory and never changes the game pointer-lock state. */
+.minecraft-inventory{position:relative;overflow:visible}
+.inv-head-actions{display:flex;gap:9px;align-items:center}
+.recipe-book-btn{border:1px solid #ad9152;color:#e2c485;font:bold 10px monospace;letter-spacing:1px;padding:10px 12px;background:linear-gradient(145deg,#302a1e,#131a15);box-shadow:inset 0 0 8px #000;cursor:pointer}
+.recipe-book-btn:hover,.recipe-book-btn.active{color:#ffebbe;border-color:#e2bd64;box-shadow:0 0 15px rgba(204,162,78,.19)}
+.recipe-codex{position:absolute;inset:65px 9px 9px;z-index:90;display:flex;flex-direction:column;min-height:0;background:linear-gradient(115deg,rgba(18,24,19,.99),rgba(10,13,11,.99));border:2px solid #8c794f;box-shadow:0 10px 50px #000,inset 0 0 0 3px #171c15;color:#ddd0ad}
+.recipe-codex.hidden{display:none}
+.codex-head{display:flex;justify-content:space-between;gap:10px;padding:16px 19px 10px;border-bottom:1px solid rgba(198,165,92,.27);background:radial-gradient(circle at 70% 0%,rgba(173,143,70,.13),transparent 70%)}
+.codex-head span{font:9px monospace;letter-spacing:3px;color:#9d8c65}.codex-head h3{font:28px Georgia,serif;letter-spacing:1px;color:#f2d8a1;margin:6px 0}.codex-head small{font:10px monospace;color:#9cae9b}
+.codex-head button{height:32px;font-size:24px;color:#dfc684;background:#151c15;border:1px solid #6e5a31;cursor:pointer}
+.codex-tools{padding:12px 17px;display:flex;gap:9px;border-bottom:1px solid #333b30;align-items:center}
+.codex-tools input{flex:1;min-width:70px;padding:11px;background:#080c09;color:#f0e6ce;border:1px solid #4f5a48;font:11px monospace}
+.codex-tools button{padding:10px;border:1px solid #555e51;background:#111a12;color:#aab1a0;font:9px monospace;cursor:pointer}
+.codex-tools button.active{border-color:#ad8c4c;color:#f4d790}
+.codex-recipes{padding:10px 16px 20px;overflow-y:auto;display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:9px;align-content:start}
+.codex-entry{display:grid;grid-template-columns:48px 96px 1fr;gap:10px;align-items:center;background:linear-gradient(100deg,#111a13,#0c110e);border:1px solid #3c493b;padding:9px;min-width:0;box-shadow:inset 0 0 15px #000}
+.codex-entry.available{border-color:#786c45}.codex-product{display:grid;place-items:center;width:45px;height:48px;border:1px solid #554d38;background:#101713}.codex-product canvas{width:39px;height:39px;image-rendering:pixelated}
+.codex-pattern{display:grid;grid-template-columns:repeat(3,27px);grid-template-rows:repeat(3,27px);gap:3px}.codex-cell{background:#0b100d;border:1px solid #364038;display:grid;place-items:center}.codex-cell canvas{width:22px;height:22px;image-rendering:pixelated}
+.codex-description{display:flex;flex-direction:column;gap:5px;min-width:0}.codex-description strong{font:12px Georgia,serif;color:#ecd19a}.codex-description small{font:8px monospace;color:#92a092;overflow-wrap:anywhere}.codex-description button{align-self:start;font:9px monospace;padding:5px 9px;color:#dec58d;background:#192119;border:1px solid #8c7646;cursor:pointer}.codex-description button:disabled{opacity:.40;cursor:default}
+.codex-empty{font:12px monospace;color:#a9ae9c}
+@media(max-width:1000px){.codex-recipes{grid-template-columns:1fr}.recipe-codex{inset:67px 2px 2px}}
+@media(max-width:620px){.codex-entry{grid-template-columns:40px 80px 1fr;gap:4px}.codex-pattern{grid-template-columns:repeat(3,23px);grid-template-rows:repeat(3,23px)}.codex-cell canvas{width:19px;height:19px}.codex-tools{flex-wrap:wrap}.codex-tools input{flex-basis:100%}.codex-head h3{font-size:19px}}
+
+/* V17 · armor character preview: actual equipped items shown on the mannequin. */
+.avatar-preview[data-head="leather"] .avatar-head{background:linear-gradient(130deg,#b88c5b,#6c432a 45%,#39291e);border:4px solid #674126;border-radius:5px 5px 2px 2px;box-shadow:inset 0 2px #d0a879;}
+.avatar-preview[data-head="iron"] .avatar-head{background:linear-gradient(130deg,#d2dce2,#667987 53%,#3a4751);border:4px solid #718491;border-radius:4px 4px 2px 2px;box-shadow:inset 0 2px #e0edf1;}
+.avatar-preview[data-chest="leather"] .avatar-body{background:repeating-linear-gradient(180deg,#775036 0 8px,#5a3727 8px 10px);border:3px ridge #b28a5f;box-shadow:inset 0 0 0 5px #3c2b20,0 3px 12px #000;}
+.avatar-preview[data-chest="leather"] .avatar-arm{background:linear-gradient(180deg,#785238 0 25%,#3c3129 25% 100%);border-top:4px solid #b28a5f;}
+.avatar-preview[data-chest="iron"] .avatar-body{background:repeating-linear-gradient(180deg,#a4b3bd 0 12px,#6b7d87 12px 14px);border:3px ridge #d0d8dd;box-shadow:inset 0 0 0 5px #4f626c,0 3px 12px #000;}
+.avatar-preview[data-chest="iron"] .avatar-arm{background:linear-gradient(180deg,#9daebb 0 26%,#46535c 26% 100%);border-top:4px solid #d1d9df;}
+.avatar-preview[data-legs="leather"] .avatar-leg{background:linear-gradient(90deg,#4b2f24,#986a4b,#4b2f24);border:2px solid #74503a;}
+.avatar-preview[data-legs="iron"] .avatar-leg{background:linear-gradient(90deg,#536673,#b2c2cc,#536673);border:2px solid #94a4ae;}
+.avatar-preview[data-feet="leather"] .avatar-leg{border-bottom:17px solid #815333;}
+.avatar-preview[data-feet="iron"] .avatar-leg{border-bottom:17px solid #9fafb9;}
+#forestScare{position:fixed;inset:0;z-index:160;pointer-events:none;opacity:0;transition:opacity .20s ease-out;display:flex;align-items:center;justify-content:center;filter:blur(.45px);background:radial-gradient(ellipse at center,transparent 13%,rgba(3,6,4,.4) 43%,rgba(0,0,0,.94) 92%)}
+#forestScare .scare-head{position:relative;width:min(42vw,390px);height:min(63vh,500px);background:linear-gradient(100deg,#050807,#101913 47%,#020403);border-radius:49% 47% 34% 33%;box-shadow:0 0 90px 60px rgba(0,0,0,.8);transform:scale(1.05);}
+#forestScare .scare-eye{position:absolute;top:34%;width:14%;height:5%;background:#e7eee3;border-radius:80% 15% 80% 25%;box-shadow:0 0 9px #b4cec0,0 0 28px rgba(210,243,221,.6)}
+#forestScare .scare-eye.l{left:24%;transform:rotate(-14deg)}#forestScare .scare-eye.r{right:24%;transform:scaleX(-1) rotate(-14deg)}
+#forestScare .scare-mouth{position:absolute;top:58%;left:42%;width:17%;height:27%;background:#000;border-radius:25% 20% 50% 45%;border:3px solid #222921;box-shadow:inset 0 -22px 28px #111;}
+
+/* V17.1 · living voxel forest menu. Terrain is drawn by the game's own
+   shader/atlas on #game; this layer only composes the UI and falling leaves. */
+#mainMenu.screen {justify-content:flex-start;overflow:hidden;padding:22px 3.5vw;background:linear-gradient(90deg,rgba(2,6,5,.80) 0%,rgba(2,6,5,.47) 37%,rgba(3,9,9,.07) 82%),linear-gradient(0deg,rgba(0,0,0,.50),transparent 28%,rgba(5,14,16,.15) 79%)}
+#mainMenu .menu-card {z-index:2;margin-left:clamp(0px,3.2vw,72px);width:min(570px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#465443 #101712;background:linear-gradient(155deg,rgba(9,18,14,.89),rgba(3,8,6,.88));border:1px solid rgba(166,194,151,.34);box-shadow:0 25px 110px rgba(0,0,0,.75),0 0 0 1px rgba(7,15,10,.58),inset 0 0 70px rgba(67,95,67,.06);backdrop-filter:blur(12px)}
+#mainMenu .menu-card:before{border-color:rgba(163,187,138,.11)}
+#mainMenu .menu-card .eyebrow{color:#b9bd94}
+#mainMenu .menu-card h1{color:#e9eee2;text-shadow:0 3px 20px #000,0 0 44px rgba(140,182,126,.10)}
+#mainMenu .menu-card h1 span{color:#a0b993}
+#mainMenu .menu-card .lead{color:#b7c5b8}
+#menuLeafFx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;opacity:.85}
+.menu-scene-label{position:absolute;bottom:42px;right:5%;z-index:2;pointer-events:none;text-align:right;text-shadow:0 2px 14px #000,0 1px 6px #000}
+.menu-scene-label b{display:block;color:#e3e9d5;font-size:clamp(15px,2.4vw,30px);font-weight:800;letter-spacing:.36em}
+.menu-scene-label small{display:block;font-size:10px;letter-spacing:.2em;color:#bdcbbd;margin-top:8px}
+.menu-scene-rule{display:block;margin:0 0 12px auto;height:2px;width:110px;background:linear-gradient(90deg,transparent,#ae9d5e)}
+@media(max-width:780px){#mainMenu.screen{justify-content:center;padding:12px;background:linear-gradient(90deg,rgba(0,0,0,.35),rgba(0,0,0,.27))}#mainMenu .menu-card{margin:0;max-height:calc(100vh - 24px)}.menu-scene-label{display:none}}
+@media(prefers-reduced-motion:reduce){#menuLeafFx{opacity:.12}}
+
+/* V18 · the launch menu stays centered over the living voxel landscape. */
+#mainMenu.screen{justify-content:center;align-items:center;padding:18px;background:radial-gradient(ellipse at center,rgba(0,0,0,.22) 0%,rgba(0,0,0,.28) 46%,rgba(0,0,0,.67) 100%)}
+#mainMenu .menu-card{margin:0 auto;width:min(620px,calc(100vw - 32px));max-height:calc(100vh - 36px);text-align:left;background:linear-gradient(155deg,rgba(7,14,11,.88),rgba(3,8,7,.91))}
+#mainMenu .menu-scene-label{bottom:18px;right:23px;opacity:.65}
+
+/* V18 psycho-visual scare: fast violent occlusion, double-vision and chromatic eyes. */
+#forestScare{transition:opacity .045s steps(2,end);background:repeating-linear-gradient(0deg,transparent 0 4px,rgba(155,206,170,.045) 5px 6px),radial-gradient(ellipse at 50% 42%,rgba(30,45,34,.28),rgba(0,0,0,.96) 80%)}
+#forestScare .scare-head{clip-path:polygon(8% 0,83% 0,92% 17%,100% 44%,82% 97%,66% 91%,51% 100%,31% 91%,9% 87%,0 50%);animation:scareV18 .09s infinite alternate;filter:drop-shadow(10px 0 1px rgba(135,13,15,.35))}
+#forestScare .scare-eye{height:6%;background:#e4f2e6;box-shadow:2px 0 4px rgba(236,56,36,.8),-3px 0 10px rgba(78,214,195,.7),0 0 45px rgba(222,255,241,.85)}
+@keyframes scareV18{0%{transform:translate(-10px,5px) rotate(-2deg) scale(1.06)}100%{transform:translate(9px,-8px) rotate(3deg) scale(1.27)}}
+
+/* V21: explicit tool/armor durability feedback in inventory and offhand. */
+.inv-slot,.equip-slot,.hotbar-slot,#hotbar .slot{position:relative}
+.durability-track{position:absolute;left:12%;right:12%;bottom:3px;height:4px;border-radius:3px;background:rgba(0,0,0,.78);box-shadow:0 0 0 1px rgba(0,0,0,.48);overflow:hidden;pointer-events:none;z-index:4}
+.durability-fill{display:block;height:100%;border-radius:3px;transition:width .12s linear;box-shadow:0 0 4px rgba(230,240,217,.22)}

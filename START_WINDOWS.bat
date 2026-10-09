@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions DisableDelayedExpansion
-title NightCraft V15.1 - local game server
+title NightCraft V22 - local game server
 
 rem Keep the actual server in THIS console. Do not detach it with START/CMD /K.
 cd /d "%~dp0" 2>nul
@@ -18,7 +18,7 @@ if not exist "logs" mkdir "logs" >nul 2>nul
 
 echo.
 echo ==========================================================
-echo   NIGHTCRAFT V15.1 - LOCAL GAME SERVER
+echo   NIGHTCRAFT V16 - LOCAL GAME SERVER
 echo ==========================================================
 echo   Game folder: %CD%
 echo   Address:     http://127.0.0.1:%NC_PORT%/

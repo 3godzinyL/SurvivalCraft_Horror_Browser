@@ -13,7 +13,7 @@ function logLine(level,message){
 process.on('uncaughtException',err=>{logLine('ERROR','Uncaught exception: '+(err?.stack||err));process.exit(1)});
 process.on('unhandledRejection',err=>logLine('ERROR','Unhandled rejection: '+(err?.stack||err)));
 
-const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.json':'application/json; charset=utf-8','.wav':'audio/wav','.wasm':'application/wasm','.glsl':'text/plain; charset=utf-8'};
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.svg':'image/svg+xml','.jpg':'image/jpeg','.json':'application/json; charset=utf-8','.wav':'audio/wav','.wasm':'application/wasm','.glsl':'text/plain; charset=utf-8'};
 const server=http.createServer((req,res)=>{
  try{
   const url=new URL(req.url,'http://localhost');let pathname=decodeURIComponent(url.pathname);
@@ -31,4 +31,4 @@ server.on('error',err=>{
  logLine('ERROR',advice+' '+(err?.stack||err));
  process.exit(1);
 });
-server.listen(port,'127.0.0.1',()=>logLine('INFO','NightCraft V15.1 ready: http://127.0.0.1:'+port));
+server.listen(port,'127.0.0.1',()=>logLine('INFO','NightCraft V22 ready: http://127.0.0.1:'+port));

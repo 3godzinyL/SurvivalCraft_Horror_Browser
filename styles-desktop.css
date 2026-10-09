@@ -1,0 +1,22 @@
+.desktop-start-actions{display:flex;gap:10px;align-items:stretch;margin-top:12px}
+.desktop-start-actions>button{flex:1!important;margin:0!important;min-width:0;min-height:46px;cursor:pointer;font-size:12px!important}
+.desktop-host-toggle{background:linear-gradient(125deg,#51432b,#6b5530)!important;border:1px solid #ac8b4a!important;color:#ffe6b3!important;letter-spacing:.1em;font-weight:800}
+.desktop-host-toggle.hidden{display:none!important}
+.desktop-host-panel.hidden,.desktop-host-details.hidden{display:none!important}
+.desktop-host-panel{position:fixed;inset:0;z-index:245;background:#020604de;backdrop-filter:blur(10px);display:grid;place-items:center;padding:18px;box-sizing:border-box}
+.desktop-host-card{box-sizing:border-box;width:min(610px,100%);max-height:96vh;overflow:auto;background:linear-gradient(137deg,#17241e,#090f0e);border:1px solid #8e7649;padding:28px;box-shadow:0 20px 90px #000c;color:#dedeca;font:13px/1.5 system-ui,sans-serif}
+.desktop-host-card header{display:flex;justify-content:space-between;align-items:center;color:#e8d2a4;letter-spacing:.16em;font-weight:900;font-size:17px}
+.desktop-host-card p{line-height:1.7;color:#a9baa8}
+.desktop-host-card label{display:block;margin:13px 0 6px;color:#acbaa9;font-size:11px;text-transform:uppercase;letter-spacing:.09em}
+.desktop-host-card input:not([type=checkbox]){width:100%;box-sizing:border-box;border:1px solid #607766;outline:none;background:#0a1411;color:#edf3df;padding:11px 12px;font:14px monospace}
+.desktop-host-card input:focus{border-color:#dab66c}.desktop-host-check{display:flex!important;gap:9px;align-items:center;text-transform:none!important;letter-spacing:normal!important}
+.desktop-host-card button{border:1px solid #65846e;background:#213f34;color:#f0eddd;cursor:pointer;padding:12px;font:800 12px system-ui,sans-serif;letter-spacing:.07em}
+.desktop-host-card button:disabled{opacity:.42;cursor:default}.desktop-host-card button:hover:not(:disabled){filter:brightness(1.19)}
+.desktop-host-card .desktop-primary{background:linear-gradient(120deg,#466b40,#65703b);border-color:#adba68;width:100%;margin-top:13px}
+.desktop-host-card header button{padding:6px 10px}.desktop-host-status{margin:14px 0 8px!important;color:#c4dcad!important}.desktop-host-status.is-error{color:#ffad8c!important}
+.desktop-host-details{margin-top:15px;background:#0c1c16;border:1px solid #4d715c;padding:16px;display:grid;gap:12px}
+.desktop-host-details>div:not(.desktop-host-buttons){display:flex;align-items:center;justify-content:space-between;gap:16px;color:#91b7a2;font-size:10px;letter-spacing:.1em}
+.desktop-host-details strong{color:#e4d5a3;overflow-wrap:anywhere;letter-spacing:normal;text-align:right}
+.desktop-host-details b{font-size:15px;color:#eee0b6}.desktop-host-details p{font-size:12px;margin:0}
+.desktop-host-buttons{display:flex;gap:9px}.desktop-host-buttons button{flex:1;margin:0!important}
+@media(max-width:640px){.desktop-start-actions,.desktop-host-buttons{flex-direction:column}.desktop-host-card{padding:20px}}

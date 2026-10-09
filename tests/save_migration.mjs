@@ -3,10 +3,13 @@ const fixture=n=>JSON.parse(fs.readFileSync(new URL('./fixtures/'+n,import.meta.
 const old7=fixture('v7-world.json'),old14=fixture('v14-world.json');
 const moved=migrateSave(old7);assert.equal(moved.version,CURRENT_SAVE_VERSION);assert.equal(moved.worldSeconds,600);
 assert.deepEqual(moved.edits,old7.edits);assert.deepEqual(moved.slots,old7.slots);
-const new14=migrateSave(old14);assert.equal(new14.version,19);assert.equal(new14.worldSeconds,1575);
+const new14=migrateSave(old14);assert.equal(new14.version,24);assert.equal(new14.worldSeconds,1575);
 for(const prop of ['edits','slots','fortifications','armorSlots','seed','pos','worldSeconds']) assert.deepEqual(new14[prop],old14[prop],`lost legacy field ${prop}`);
 assert.deepEqual(migrateSave(new14),new14,'migration must be idempotent');
+const world17={...new14,version:21,worldgenVersion:17};
+assert.deepEqual(migrateSave(world17),{...world17,version:24},'V17 world must load and migrate metadata without changing generation version');
+assert.equal(migrateSave({...old14,worldgenVersion:16}).worldgenVersion,16,'legacy worldgen must be preserved');
 assert.throws(()=>migrateSave({...old14,edits:[['0,1,2',256]]}),/Invalid block/);
 assert.throws(()=>migrateSave({...old14,version:25}),/newer/);
 assert.throws(()=>migrateSave({...old14,version:0}),/Unsupported/);
-console.log('SAVE_MIGRATION_PASS legacy V7→V19 day duration, V14 world edits + equip, idempotence and corrupt-data validation');
+console.log('SAVE_MIGRATION_PASS legacy V7→V24 day duration, V14 world edits + equip, idempotence and corrupt-data validation');

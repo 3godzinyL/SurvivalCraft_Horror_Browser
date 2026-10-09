@@ -62,6 +62,8 @@ try {
     ['/data/blocks.json', 'application/json'],
     ['/src/render/shaders/voxel.vert.glsl', 'text/plain'],
     ['/assets/audio/bird.wav', 'audio/wav'],
+    ['/assets/favicon.svg', 'image/svg+xml'],
+    ['/src/render/menu-scene.js', 'text/javascript'],
   ];
   for(const [url,mime] of routes){
     const r=await get(url);
@@ -74,7 +76,7 @@ try {
   }
   assert.equal((await get('/does-not-exist-nightcraft')).status,404);
   console.log('WINDOWS_LAUNCHER_STATIC_PASS CRLF, persistent console, Node/PowerShell fallback, diagnostics');
-  console.log('WINDOWS_SERVER_SMOKE_PASS 6 routes (+HEAD), MIME, HTTP 404, browser assets');
+  console.log('WINDOWS_SERVER_SMOKE_PASS 8 routes (+HEAD), MIME, HTTP 404, browser assets');
 } finally {
   child.kill('SIGTERM');
   await Promise.race([new Promise(r=>child.once('exit',r)),new Promise(r=>setTimeout(r,800))]);

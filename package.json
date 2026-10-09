@@ -1,11 +1,65 @@
 {
   "name": "nightcraft-cold-forest",
   "private": true,
-  "version": "15.1.0",
+  "version": "25.0.2",
   "type": "module",
   "scripts": {
     "start": "node server.cjs",
-    "check": "node tools/check-modules.mjs && node tools/validate-data.mjs && node tests/data_parity.mjs && node tests/worker_parity.mjs && node tests/worker_roundtrip.mjs && node tests/ai_navigation.mjs && node tests/save_migration.mjs && node tests/windows_launcher.mjs",
-    "ids": "node tools/gen-ids.mjs"
+    "check": "node tools/check-modules.mjs && node tools/validate-data.mjs && node tests/data_parity.mjs && node tests/worker_parity.mjs && node tests/worker_roundtrip.mjs && node tests/ai_navigation.mjs && node tests/v16_maze.mjs && node tests/v16_features.mjs && node tests/save_migration.mjs && node tests/windows_launcher.mjs && node tests/v17_features.mjs && node tests/v17_1_menu.mjs && node tests/v18_features.mjs && node tests/v18_1_fixes.mjs && node tests/v19_features.mjs && node tests/v20_features.mjs && node tests/v21_features.mjs && node tests/v22_features.mjs && node tests/multiplayer.mjs && node tests/windows_spawn_paths.mjs && node tests/ngrok_direct_join.mjs && node tests/desktop_host.mjs",
+    "ids": "node tools/gen-ids.mjs",
+    "pages:build": "node tools/prepare-pages.mjs",
+    "pages:test": "node tests/github_pages.mjs",
+    "multiplayer": "node multiplayer/server.cjs",
+    "desktop": "electron .",
+    "desktop:win": "electron-builder --win portable --x64",
+    "desktop:dir": "electron-builder --win dir --x64"
+  },
+  "description": "NightCraft V25: standalone Electron desktop and multiplayer/ngrok host",
+  "main": "electron/main.cjs",
+  "devDependencies": {
+    "electron": "37.2.3",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "pl.nightcraft.coldforest",
+    "productName": "NightCraft Cold Forest",
+    "asar": true,
+    "directories": {
+      "output": "dist-desktop"
+    },
+    "files": [
+      "index.html",
+      "style.css",
+      "styles-waypoint.css",
+      "styles-multiplayer.css",
+      "styles-desktop.css",
+      "electron/**/*",
+      "src/**/*",
+      "data/**/*",
+      "assets/**/*",
+      "package.json",
+      "!**/*.py"
+    ],
+    "extraResources": [
+      {
+        "from": "multiplayer/server.cjs",
+        "to": "multiplayer/server.cjs"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "NightCraft_V25_Desktop_${version}_Windows_x64.${ext}",
+      "icon": "electron/icon.ico"
+    },
+    "portable": {
+      "artifactName": "NightCraft_V25_Desktop_${version}_Windows_x64.${ext}"
+    }
   }
 }

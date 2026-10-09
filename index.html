@@ -3,9 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>NightCraft: Cold Forest — V15</title>
+  <title>NightCraft: Cold Forest — V25 DESKTOP + CO-OP</title>
   <meta name="description" content="Rozbudowany przeglądarkowy voxel survival-horror." />
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="stylesheet" href="styles-waypoint.css">
+  <link rel="stylesheet" href="styles-multiplayer.css">
+  <link rel="stylesheet" href="styles-desktop.css">
 </head>
 <body>
   <canvas id="game" aria-label="NightCraft game canvas"></canvas>
@@ -16,11 +20,14 @@
   <div id="threatPulse"></div>
   <canvas id="rainFx" aria-hidden="true"></canvas><div id="scanWave" aria-hidden="true"></div>
   <div id="blackoutFlash"></div>
-  <div id="itemTooltip" class="item-tooltip hidden"></div>
+  <div id="forestScare" aria-hidden="true"><div class="scare-head"><i class="scare-eye l"></i><i class="scare-eye r"></i><i class="scare-mouth"></i></div></div>
+  <div id="itemTooltip" class="item-tooltip hidden"></div><div id="waypointHud" class="waypoint-hud hidden"><b id="waypointArrow">▲</b><span id="waypointText">CEL</span></div>
 
   <section id="mainMenu" class="screen active">
+    <canvas id="menuLeafFx" aria-hidden="true"></canvas>
+    <div class="menu-scene-label" aria-hidden="true"><span class="menu-scene-rule"></span><b>COLD FOREST</b><small>PANORAMA LASU · ZASIĘG 12 CHUNKÓW</small></div>
     <div class="menu-card">
-      <div class="eyebrow">VOXEL SURVIVAL HORROR · V15</div>
+      <div class="eyebrow">VOXEL SURVIVAL HORROR · V25 DESKTOP</div>
       <h1>NIGHTCRAFT <span>COLD FOREST</span></h1>
       <p class="lead">Chłodny, mglisty sandbox w duchu klasycznych voxel-survivalów: dzikie biomy, jaskinie i opuszczone szyby, zwierzęta, nocne drapieżniki, pełny ekwipunek i cięższy klimat po zmroku.</p>
       <label class="field">Seed świata<input id="seedInput" maxlength="32" placeholder="np. foggy-pines-199" /></label>
@@ -32,13 +39,56 @@
         </select>
       </label>
       <div class="menu-actions">
-        <button id="newGameBtn" class="primary">NOWY ŚWIAT</button>
-        <button id="continueBtn">KONTYNUUJ</button>
+        <button id="newGameBtn" class="primary">START OFFLINE · NOWY ŚWIAT</button>
+        <button id="continueBtn">KONTYNUUJ OFFLINE</button>
       </div>
-      <div class="tiny">WASD ruch · Shift sprint · Ctrl cichy chód · Spacja skok/pływanie · LPM kop/atak · PPM postaw/użyj · E ekwipunek/crafting · 1–9 hotbar · Esc pauza/zamknij panel · M duża mapa · X: X-Ray od 1 lvl (45 s / 14 s) · PPM na śpiworze: sen i respawn · środkowy przycisk myszy: ulepsz konstrukcję · T katalog admina · F3 debug</div>
+      <div class="desktop-start-actions"><button id="desktopHostToggle" class="desktop-host-toggle hidden" type="button">HOSTUJ GRĘ · WŁASNY SERWER</button><button id="mpToggle" class="mp-launch" type="button">DOŁĄCZ DO GRY · LINK NGROK</button></div>
+      <div class="tiny">WASD ruch · Shift sprint · Ctrl cichy chód · Spacja skok/wynurzanie · Shift zanurzanie · F5 kamera · LPM kop/atak · PPM postaw/użyj · E ekwipunek/crafting · 1–9 hotbar · Esc pauza/zamknij panel · M duża mapa (PPM: waypoint, rolka: zoom minimapy) · X: X-Ray od 1 lvl (leczy + wzmacnia się z XP) · PPM na śpiworze: sen i respawn · środkowy przycisk myszy: ulepsz konstrukcję (3/6/9) · księga craftingu w E · T katalog admina · TAB gracze i XYZ (online) · Enter czat (online) · F3 debug</div>
       <div class="legal">Autorskie tekstury i dźwięki stworzone dla tego builda. Styl wizualny jest inspirowany starymi, surowymi sandboxami voxelowymi — bez kopiowania cudzych assetów 1:1.</div>
     </div>
   </section>
+
+  <section id="desktopHostPanel" class="desktop-host-panel hidden" aria-label="Hostuj grę">
+    <div class="desktop-host-card">
+      <header><span>HOST · WSPÓLNY ŚWIAT</span><button type="button" id="desktopHostClose" aria-label="Zamknij">✕</button></header>
+      <p class="desktop-host-intro">Uruchom serwer prosto z gry. Wpisz adres HTTPS ngroka albo pozwól aplikacji uruchomić ngrok, jeśli jest zainstalowany i skonfigurowany.</p>
+      <label for="desktopHostSeed">Seed nowego świata (przy istniejącym zapisie zachowamy stary)</label>
+      <input id="desktopHostSeed" maxlength="32" placeholder="NIGHTCRAFT-SHARED-FOREST" />
+      <label for="desktopHostLink">Adres HTTPS ngrok — opcjonalnie, jeśli tunel już działa</label>
+      <input id="desktopHostLink" placeholder="https://twoj-host.ngrok-free.app" spellcheck="false" />
+      <label class="desktop-host-check"><input type="checkbox" id="desktopHostAutoNgrok" checked /> Spróbuj uruchomić ngrok automatycznie (wymaga ngrok.exe i authtoken)</label>
+      <button type="button" id="desktopHostStart" class="desktop-primary">URUCHOM SERWER</button>
+      <p id="desktopHostStatus" class="desktop-host-status">Serwer jeszcze nie działa.</p>
+      <div id="desktopHostDetails" class="desktop-host-details hidden">
+        <div>PORT SERWERA <b id="desktopHostPort">—</b></div>
+        <div>LINK DLA ZNAJOMYCH <strong id="desktopHostPublic">—</strong></div>
+        <p id="desktopHostHint"></p>
+        <div class="desktop-host-buttons"><button id="desktopHostCopy" type="button">KOPIUJ LINK</button><button id="desktopHostApplyLink" type="button">ZAPISZ LINK</button></div>
+        <div class="desktop-host-buttons"><button id="desktopHostPlay" class="desktop-primary" type="button">▶ START GRY NA HOŚCIE</button><button id="desktopHostStop" type="button">ZATRZYMAJ SERWER</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="multiplayerPanel" class="mp-panel hidden" aria-label="Multiplayer">
+    <div class="mp-card">
+      <header><b>CO-OP · MULTIPLAYER</b><button id="mpClose" type="button" aria-label="Zamknij">✕</button></header>
+      <p>Wklej adres HTTPS swojego hosta ngrok. Bez kodów pokojów: wszyscy trafiają do jednego wspólnego świata na serwerze.</p>
+      <label for="mpUrl">Adres HTTP/HTTPS ngrok (automatycznie zamieniany na WebSocket)</label><input id="mpUrl" spellcheck="false" placeholder="https://twoj-adres.ngrok-free.app" />
+      <label for="mpName">Nick</label><input id="mpName" maxlength="22" value="Ocalały" />
+      <div class="mp-actions"><button id="mpQuickJoin" class="mp-join-main" type="button">▶ START · DOŁĄCZ DO ŚWIATA HOSTA</button></div>
+      <details class="mp-legacy"><summary>Starsze pokoje V23 — opcjonalnie</summary>
+      <label for="mpRoom">Kod pokoju znajomego</label><input id="mpRoom" maxlength="8" placeholder="8 ZNAKÓW" autocapitalize="characters" />
+      <div class="mp-actions"><button id="mpHost" type="button">+ UTWÓRZ POKÓJ</button><button id="mpJoin" type="button">➜ DOŁĄCZ</button></div>
+      </details>
+      <p id="mpStatus">Wklej adres HTTPS hosta albo ws://127.0.0.1:8787 do testu lokalnego.</p>
+      <div class="mp-actions"><button id="mpCopy" disabled type="button">KOPIUJ KOD POKOJU</button><button id="mpExit" class="hidden" type="button">ROZŁĄCZ</button></div>
+      <p>GitHub Pages hostuje klienta. W aplikacji desktopowej host uruchamia serwer z menu; znajomi wpisują jego link ngrok. Świat i bloki synchronizuje serwer; osobiste ekwipunki i AI potworów pozostają lokalne.</p>
+    </div>
+  </section>
+  <div id="mpEnterWorld" class="mp-enter hidden"><div><div class="eyebrow">WSPÓLNY ŚWIAT ZAŁADOWANY</div><h2>POŁĄCZONO Z HOSTEM</h2><p>Wejdź do gry i przechwyć kursor. TAB pokaże graczy i ich pozycje.</p><button id="mpEnterButton" class="primary">▶ WEJDŹ DO GRY</button></div></div>
+  <div id="mpTabList" class="mp-tab hidden"><header>GRACZE ONLINE <small>PRZYTRZYMAJ TAB</small></header><div id="mpTabRows"></div></div>
+  <div id="mpHud" class="mp-hud hidden"><b id="mpRoomBadge">OFFLINE</b><span id="mpPlayers"></span><button type="button" id="mpChatToggle">CZAT</button></div>
+  <div id="mpChat" class="mp-chat hidden"><div id="mpMessages" aria-live="polite"></div><input id="mpChatInput" autocomplete="off" maxlength="160" placeholder="Wiadomość · Enter wyślij" /></div>
 
   <section id="pauseMenu" class="screen">
     <div class="menu-card compact">
@@ -52,7 +102,7 @@
       <div class="settings-grid">
         <label>Czułość myszy<input id="sensInput" type="range" min="0.002" max="0.022" step="0.00025" value="0.0115" /></label>
         <label>Głośność<input id="volumeInput" type="range" min="0" max="1" step="0.05" value="0.82" /></label>
-        <label>Render distance<select id="renderDistanceSelect"><option value="2">2 chunki</option><option value="3">3 chunki</option><option value="4" selected>4 chunki</option><option value="5">5 chunków</option><option value="6">6 chunków</option></select></label>
+        <label>Render distance<select id="renderDistanceSelect"><option value="2">2 chunki</option><option value="3">3 chunki</option><option value="4">4 chunki</option><option value="5">5 chunków</option><option value="6">6 chunków</option><option value="8">8 chunków</option><option value="10">10 chunków</option><option value="12" selected>12 chunków</option></select></label>
       </div>
       <div class="tiny admin-help">Po włączeniu administratora: <b>T</b> otwiera katalog wszystkich bloków i mobów.</div>
       <button id="quitBtn" class="danger">ZAPISZ I WYJDŹ DO MENU</button>
@@ -72,7 +122,7 @@
   <section id="inventoryPanel" class="panel hidden minecraft-inventory">
     <div class="panel-head">
       <div><span class="eyebrow">EKWIPUNEK / CRAFTING 3×3</span><h3>Ekwipunek</h3><div class="inventory-sub">LPM: podnieś / odłóż / zamień · PPM: pół stosu / 1 sztuka · przytrzymaj PPM i przeciągnij: rozkładaj po 1 sztuce · Shift+LPM: szybkie przeniesienie · Drag&drop działa między plecakiem, hotbarem, craftingiem i rękami · E zamyka</div></div>
-      <button id="closeInventoryBtn">×</button>
+      <div class="inv-head-actions"><button id="recipeBookBtn" class="recipe-book-btn" title="Pokaż księgę receptur">▤ KSIĘGA CRAFTINGU</button><button id="closeInventoryBtn">×</button></div>
     </div>
     <div class="inventory-layout">
       <aside class="paperdoll">
@@ -105,6 +155,11 @@
         <div class="craft-search"><input id="craftSearch" placeholder="Szukaj receptury..." /></div>
         <div id="recipeList" class="recipe-list"></div>
       </aside>
+    </div>
+    <div id="recipeCodex" class="recipe-codex hidden" role="dialog" aria-label="Księga receptur">
+      <div class="codex-head"><div><span>NOTATNIK OCALAŁEGO · I–IV</span><h3>Księga receptur</h3><small>Wszystkie craftingi świata · kliknij przepis, aby ułożyć składniki</small></div><button id="closeRecipeCodex" title="Zamknij księgę">×</button></div>
+      <div class="codex-tools"><input id="codexSearch" placeholder="Szukaj materiału lub przedmiotu..." autocomplete="off"/><button id="codexAll" class="active">WSZYSTKIE</button><button id="codexReady">DOSTĘPNE</button></div>
+      <div id="codexRecipes" class="codex-recipes"></div>
     </div>
   </section>
   <div id="cursorStack" class="cursor-stack hidden"></div>

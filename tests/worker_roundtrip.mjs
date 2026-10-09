@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {loadGameData} from '../src/data/loader.js';
 import {createChunkWorker} from '../src/world/worker/client.js';
 const root=new URL('../',import.meta.url);
-globalThis.fetch=async url=>({ok:true,json:async()=>JSON.parse(fs.readFileSync(new URL('.'+url,root),'utf8'))});
+globalThis.fetch=async url=>({ok:true,json:async()=>JSON.parse(fs.readFileSync((url instanceof URL?url:new URL('.'+url,root)),'utf8'))});
 const data=await loadGameData();
 const outputs=[];
 globalThis.self={postMessage:(data,transfer=[])=>outputs.push({data,transferred:transfer.length})};

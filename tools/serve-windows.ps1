@@ -163,7 +163,7 @@ $listener = $null
 try {
     $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Parse('127.0.0.1'), $Port)
     $listener.Start(128)
-    Write-ServerLog ('NightCraft V15.1 ready: http://127.0.0.1:{0}/ (PowerShell fallback, no admin needed)' -f $Port)
+    Write-ServerLog ('NightCraft V16 ready: http://127.0.0.1:{0}/ (PowerShell fallback, no admin needed)' -f $Port)
     while ($true) {
         $client = $listener.AcceptTcpClient()
         try {
