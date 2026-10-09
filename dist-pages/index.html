@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>NightCraft: Cold Forest — V25 DESKTOP + CO-OP</title>
+  <meta name="description" content="Rozbudowany przeglądarkowy voxel survival-horror." />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="stylesheet" href="styles-waypoint.css">
+  <link rel="stylesheet" href="styles-multiplayer.css">
+  <link rel="stylesheet" href="styles-desktop.css">
+</head>
+<body>
+  <canvas id="game" aria-label="NightCraft game canvas"></canvas>
+  <div id="urpGrade"></div>
+  <div id="skyNoise"></div>
+  <div id="vignette"></div>
+  <div id="damageFlash"></div>
+  <div id="threatPulse"></div>
+  <canvas id="rainFx" aria-hidden="true"></canvas><div id="scanWave" aria-hidden="true"></div>
+  <div id="blackoutFlash"></div>
+  <div id="forestScare" aria-hidden="true"><div class="scare-head"><i class="scare-eye l"></i><i class="scare-eye r"></i><i class="scare-mouth"></i></div></div>
+  <div id="itemTooltip" class="item-tooltip hidden"></div><div id="waypointHud" class="waypoint-hud hidden"><b id="waypointArrow">▲</b><span id="waypointText">CEL</span></div>
+
+  <section id="mainMenu" class="screen active">
+    <canvas id="menuLeafFx" aria-hidden="true"></canvas>
+    <div class="menu-scene-label" aria-hidden="true"><span class="menu-scene-rule"></span><b>COLD FOREST</b><small>PANORAMA LASU · ZASIĘG 12 CHUNKÓW</small></div>
+    <div class="menu-card">
+      <div class="eyebrow">VOXEL SURVIVAL HORROR · V25 DESKTOP</div>
+      <h1>NIGHTCRAFT <span>COLD FOREST</span></h1>
+      <p class="lead">Chłodny, mglisty sandbox w duchu klasycznych voxel-survivalów: dzikie biomy, jaskinie i opuszczone szyby, zwierzęta, nocne drapieżniki, pełny ekwipunek i cięższy klimat po zmroku.</p>
+      <label class="field">Seed świata<input id="seedInput" maxlength="32" placeholder="np. foggy-pines-199" /></label>
+      <label class="field">Poziom zagrożenia
+        <select id="difficultySelect">
+          <option value="normal">Hard</option>
+          <option value="nightmare" selected>Nightmare</option>
+          <option value="insane">Insane</option>
+        </select>
+      </label>
+      <div class="menu-actions">
+        <button id="newGameBtn" class="primary">START OFFLINE · NOWY ŚWIAT</button>
+        <button id="continueBtn">KONTYNUUJ OFFLINE</button>
+      </div>
+      <div class="desktop-start-actions"><button id="desktopHostToggle" class="desktop-host-toggle hidden" type="button">HOSTUJ GRĘ · WŁASNY SERWER</button><button id="mpToggle" class="mp-launch" type="button">DOŁĄCZ DO GRY · LINK NGROK</button></div>
+      <div class="tiny">WASD ruch · Shift sprint · Ctrl cichy chód · Spacja skok/wynurzanie · Shift zanurzanie · F5 kamera · LPM kop/atak · PPM postaw/użyj · E ekwipunek/crafting · 1–9 hotbar · Esc pauza/zamknij panel · M duża mapa (PPM: waypoint, rolka: zoom minimapy) · X: X-Ray od 1 lvl (leczy + wzmacnia się z XP) · PPM na śpiworze: sen i respawn · środkowy przycisk myszy: ulepsz konstrukcję (3/6/9) · księga craftingu w E · T katalog admina · TAB gracze i XYZ (online) · Enter czat (online) · F3 debug</div>
+      <div class="legal">Autorskie tekstury i dźwięki stworzone dla tego builda. Styl wizualny jest inspirowany starymi, surowymi sandboxami voxelowymi — bez kopiowania cudzych assetów 1:1.</div>
+    </div>
+  </section>
+
+  <section id="desktopHostPanel" class="desktop-host-panel hidden" aria-label="Hostuj grę">
+    <div class="desktop-host-card">
+      <header><span>HOST · WSPÓLNY ŚWIAT</span><button type="button" id="desktopHostClose" aria-label="Zamknij">✕</button></header>
+      <p class="desktop-host-intro">Uruchom serwer prosto z gry. Wpisz adres HTTPS ngroka albo pozwól aplikacji uruchomić ngrok, jeśli jest zainstalowany i skonfigurowany.</p>
+      <label for="desktopHostSeed">Seed nowego świata (przy istniejącym zapisie zachowamy stary)</label>
+      <input id="desktopHostSeed" maxlength="32" placeholder="NIGHTCRAFT-SHARED-FOREST" />
+      <label for="desktopHostLink">Adres HTTPS ngrok — opcjonalnie, jeśli tunel już działa</label>
+      <input id="desktopHostLink" placeholder="https://twoj-host.ngrok-free.app" spellcheck="false" />
+      <label class="desktop-host-check"><input type="checkbox" id="desktopHostAutoNgrok" checked /> Spróbuj uruchomić ngrok automatycznie (wymaga ngrok.exe i authtoken)</label>
+      <button type="button" id="desktopHostStart" class="desktop-primary">URUCHOM SERWER</button>
+      <p id="desktopHostStatus" class="desktop-host-status">Serwer jeszcze nie działa.</p>
+      <div id="desktopHostDetails" class="desktop-host-details hidden">
+        <div>PORT SERWERA <b id="desktopHostPort">—</b></div>
+        <div>LINK DLA ZNAJOMYCH <strong id="desktopHostPublic">—</strong></div>
+        <p id="desktopHostHint"></p>
+        <div class="desktop-host-buttons"><button id="desktopHostCopy" type="button">KOPIUJ LINK</button><button id="desktopHostApplyLink" type="button">ZAPISZ LINK</button></div>
+        <div class="desktop-host-buttons"><button id="desktopHostPlay" class="desktop-primary" type="button">▶ START GRY NA HOŚCIE</button><button id="desktopHostStop" type="button">ZATRZYMAJ SERWER</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="multiplayerPanel" class="mp-panel hidden" aria-label="Multiplayer">
+    <div class="mp-card">
+      <header><b>CO-OP · MULTIPLAYER</b><button id="mpClose" type="button" aria-label="Zamknij">✕</button></header>
+      <p>Wklej adres HTTPS swojego hosta ngrok. Bez kodów pokojów: wszyscy trafiają do jednego wspólnego świata na serwerze.</p>
+      <label for="mpUrl">Adres HTTP/HTTPS ngrok (automatycznie zamieniany na WebSocket)</label><input id="mpUrl" spellcheck="false" placeholder="https://twoj-adres.ngrok-free.app" />
+      <label for="mpName">Nick</label><input id="mpName" maxlength="22" value="Ocalały" />
+      <div class="mp-actions"><button id="mpQuickJoin" class="mp-join-main" type="button">▶ START · DOŁĄCZ DO ŚWIATA HOSTA</button></div>
+      <details class="mp-legacy"><summary>Starsze pokoje V23 — opcjonalnie</summary>
+      <label for="mpRoom">Kod pokoju znajomego</label><input id="mpRoom" maxlength="8" placeholder="8 ZNAKÓW" autocapitalize="characters" />
+      <div class="mp-actions"><button id="mpHost" type="button">+ UTWÓRZ POKÓJ</button><button id="mpJoin" type="button">➜ DOŁĄCZ</button></div>
+      </details>
+      <p id="mpStatus">Wklej adres HTTPS hosta albo ws://127.0.0.1:8787 do testu lokalnego.</p>
+      <div class="mp-actions"><button id="mpCopy" disabled type="button">KOPIUJ KOD POKOJU</button><button id="mpExit" class="hidden" type="button">ROZŁĄCZ</button></div>
+      <p>GitHub Pages hostuje klienta. W aplikacji desktopowej host uruchamia serwer z menu; znajomi wpisują jego link ngrok. Świat i bloki synchronizuje serwer; osobiste ekwipunki i AI potworów pozostają lokalne.</p>
+    </div>
+  </section>
+  <div id="mpEnterWorld" class="mp-enter hidden"><div><div class="eyebrow">WSPÓLNY ŚWIAT ZAŁADOWANY</div><h2>POŁĄCZONO Z HOSTEM</h2><p>Wejdź do gry i przechwyć kursor. TAB pokaże graczy i ich pozycje.</p><button id="mpEnterButton" class="primary">▶ WEJDŹ DO GRY</button></div></div>
+  <div id="mpTabList" class="mp-tab hidden"><header>GRACZE ONLINE <small>PRZYTRZYMAJ TAB</small></header><div id="mpTabRows"></div></div>
+  <div id="mpHud" class="mp-hud hidden"><b id="mpRoomBadge">OFFLINE</b><span id="mpPlayers"></span><button type="button" id="mpChatToggle">CZAT</button></div>
+  <div id="mpChat" class="mp-chat hidden"><div id="mpMessages" aria-live="polite"></div><input id="mpChatInput" autocomplete="off" maxlength="160" placeholder="Wiadomość · Enter wyślij" /></div>
+
+  <section id="pauseMenu" class="screen">
+    <div class="menu-card compact">
+      <div class="eyebrow">PAUZA</div>
+      <h2>ŚWIAT CZEKA</h2>
+      <button id="resumeBtn" class="primary">WRÓĆ DO GRY</button>
+      <div class="pause-actions-row">
+        <button id="saveBtn">ZAPISZ TERAZ</button>
+        <button id="adminToggleBtn" class="admin-toggle">TRYB ADMINISTRATORA: OFF</button>
+      </div>
+      <div class="settings-grid">
+        <label>Czułość myszy<input id="sensInput" type="range" min="0.002" max="0.022" step="0.00025" value="0.0115" /></label>
+        <label>Głośność<input id="volumeInput" type="range" min="0" max="1" step="0.05" value="0.82" /></label>
+        <label>Render distance<select id="renderDistanceSelect"><option value="2">2 chunki</option><option value="3">3 chunki</option><option value="4">4 chunki</option><option value="5">5 chunków</option><option value="6">6 chunków</option><option value="8">8 chunków</option><option value="10">10 chunków</option><option value="12" selected>12 chunków</option></select></label>
+      </div>
+      <div class="tiny admin-help">Po włączeniu administratora: <b>T</b> otwiera katalog wszystkich bloków i mobów.</div>
+      <button id="quitBtn" class="danger">ZAPISZ I WYJDŹ DO MENU</button>
+    </div>
+  </section>
+
+  <section id="deathMenu" class="screen">
+    <div class="menu-card compact death-card">
+      <div class="eyebrow danger-text">KONIEC</div>
+      <h2 id="deathTitle">LAS CIĘ ZNALAZŁ</h2>
+      <p id="deathStats"></p>
+      <button id="respawnBtn" class="primary">ODRODŹ SIĘ</button>
+      <button id="deathQuitBtn">MENU GŁÓWNE</button>
+    </div>
+  </section>
+
+  <section id="inventoryPanel" class="panel hidden minecraft-inventory">
+    <div class="panel-head">
+      <div><span class="eyebrow">EKWIPUNEK / CRAFTING 3×3</span><h3>Ekwipunek</h3><div class="inventory-sub">LPM: podnieś / odłóż / zamień · PPM: pół stosu / 1 sztuka · przytrzymaj PPM i przeciągnij: rozkładaj po 1 sztuce · Shift+LPM: szybkie przeniesienie · Drag&drop działa między plecakiem, hotbarem, craftingiem i rękami · E zamyka</div></div>
+      <div class="inv-head-actions"><button id="recipeBookBtn" class="recipe-book-btn" title="Pokaż księgę receptur">▤ KSIĘGA CRAFTINGU</button><button id="closeInventoryBtn">×</button></div>
+    </div>
+    <div class="inventory-layout">
+      <aside class="paperdoll">
+        <div class="paperdoll-title">POSTAĆ · OCHRONA</div>
+        <div class="avatar-preview"><div class="avatar-head"></div><div class="avatar-body"></div><div class="avatar-arm a1"></div><div class="avatar-arm a2"></div><div class="avatar-leg l1"></div><div class="avatar-leg l2"></div></div>
+        <div class="hand-row"><div><span>GŁÓWNA</span><div id="mainHandSlot" class="equip-slot inv-slot"></div></div><div><span>DRUGA RĘKA</span><div id="offhandSlot" class="equip-slot inv-slot"></div></div></div>
+        <div class="armor-panel"><div class="armor-heading">PANCERZ <small>przeciągnij elementy do slotów</small></div><div id="armorGrid" class="armor-grid"></div><div id="armorStats" class="armor-stats">Pancerz: 0 / 15</div></div>
+        <div class="offhand-help">Druga ręka jest prawdziwym slotem. Możesz do niej przeciągnąć pochodnię, blok, jedzenie albo narzędzie.</div>
+      </aside>
+
+      <main class="inventory-main">
+        <div id="chestSection" class="chest-section hidden">
+          <div class="inventory-section-title" id="chestTitle">SKRZYNKA STARTOWA</div>
+          <div id="chestGrid" class="inventory-grid chest-grid"></div>
+          <div class="chest-hint">Losowy startowy loot. Po zabraniu przedmiotów skrzynka zostaje w świecie.</div>
+        </div>
+        <div class="inventory-section-title">EKWIPUNEK</div>
+        <div id="inventoryGrid" class="inventory-grid"></div>
+      </main>
+
+      <aside class="craft-panel">
+        <div class="craft-title">CRAFTING 3×3 · W EKWIPUNKU</div>
+        <div class="craft-bench">
+          <div id="craftGrid" class="craft-grid"></div>
+          <div class="craft-arrow">→</div>
+          <div><div class="craft-output-label">WYNIK</div><div id="craftOutput" class="craft-output inv-slot"></div></div>
+        </div>
+        <div class="craft-status" id="craftStatus">Ułóż recepturę w siatce 3×3 jak w Minecraft.</div>
+        <div class="recipe-book-title">RECEPTURY MINECRAFT / UŁÓŻ AUTOMATYCZNIE</div>
+        <div class="craft-search"><input id="craftSearch" placeholder="Szukaj receptury..." /></div>
+        <div id="recipeList" class="recipe-list"></div>
+      </aside>
+    </div>
+    <div id="recipeCodex" class="recipe-codex hidden" role="dialog" aria-label="Księga receptur">
+      <div class="codex-head"><div><span>NOTATNIK OCALAŁEGO · I–IV</span><h3>Księga receptur</h3><small>Wszystkie craftingi świata · kliknij przepis, aby ułożyć składniki</small></div><button id="closeRecipeCodex" title="Zamknij księgę">×</button></div>
+      <div class="codex-tools"><input id="codexSearch" placeholder="Szukaj materiału lub przedmiotu..." autocomplete="off"/><button id="codexAll" class="active">WSZYSTKIE</button><button id="codexReady">DOSTĘPNE</button></div>
+      <div id="codexRecipes" class="codex-recipes"></div>
+    </div>
+  </section>
+  <div id="cursorStack" class="cursor-stack hidden"></div>
+
+
+
+  <section id="furnacePanel" class="panel hidden furnace-panel">
+    <div class="panel-head">
+      <div><span class="eyebrow">PIEC</span><h3>Przetapianie</h3><div class="inventory-sub">Wejście + paliwo → wynik. Węgiel pali najdłużej. Esc zamyka i wraca do gry.</div></div>
+      <button id="closeFurnaceBtn">×</button>
+    </div>
+    <div class="furnace-layout">
+      <div class="furnace-column"><span>WEJŚCIE</span><div id="furnaceInput" class="equip-slot inv-slot"></div></div>
+      <div class="furnace-core"><div class="furnace-fire"><i id="furnaceBurnFill"></i></div><div class="furnace-arrow">→</div><div class="furnace-progress"><i id="furnaceProgressFill"></i></div></div>
+      <div class="furnace-column"><span>PALIWO</span><div id="furnaceFuel" class="equip-slot inv-slot"></div></div>
+      <div class="furnace-column output"><span>WYNIK</span><div id="furnaceOutput" class="equip-slot inv-slot"></div></div>
+    </div>
+    <div id="furnaceStatus" class="craft-status">Włóż rudę, piasek albo bruk oraz paliwo.</div>
+  </section>
+
+  <section id="fullMapPanel" class="panel hidden full-map-panel">
+    <div class="panel-head">
+      <div><span class="eyebrow">MAPA ŚWIATA</span><h3>Mapa eksploracji</h3><div id="mapStats" class="inventory-sub">0 m</div></div>
+      <button id="closeMapBtn">×</button>
+    </div>
+    <div class="full-map-body"><canvas id="fullMap" width="720" height="720"></canvas><div class="map-legend">▲ TY · ◆ SPAWN · ■ SKRZYNIA · czerwone punkty: zagrożenia</div></div>
+  </section>
+
+  <section id="adminPanel" class="panel hidden admin-panel">
+    <div class="panel-head"><div><span class="eyebrow">TRYB ADMINISTRATORA</span><h3>Katalog świata</h3><div class="inventory-sub">Blok: dodaj ×64 do ekwipunku · Mob: przywołaj 5 bloków przed graczem</div></div><button id="closeAdminBtn">×</button></div>
+    <div class="admin-toolbar"><button id="adminBlocksTab" class="active">BLOKI</button><button id="adminMobsTab">MOBY</button><input id="adminSearch" placeholder="Szukaj..." /></div>
+    <div id="adminGrid" class="admin-grid"></div>
+  </section>
+
+  <div id="hud" class="hidden">
+    <div class="hud-top-left">
+      <div class="brand">NIGHTCRAFT</div>
+      <div id="worldBiome">COLD FOREST</div>
+      <div id="threatInfo">Zagrożenie: czujność</div>
+    </div>
+    <div class="hud-clock" id="worldClock">DZIEŃ 1 · 16:00</div>
+    <div class="compass-hud" id="compass"><div class="compass-title">KOMPAS · POŁOŻENIE</div><div class="compass-strip" id="compassStrip"><span class="compass-tick"></span></div><div id="compassHeading" class="compass-heading">N · 000°</div><div id="compassPosition" class="compass-coords">X 0 · Y 0 · Z 0</div></div><div class="scan-ability" id="scanAbility">X-RAY · LVL 1</div><div class="xp-progress" aria-label="Doświadczenie i zdolność X-Ray"><div class="xp-caption"><span id="xpLabel">POZIOM 0</span><b id="xpNumerical">0 / 90 XP</b></div><div class="xp-track"><div id="xpBar" class="xp-fill"></div></div></div>
+    <div id="minimapWrap" class="minimap-wrap"><canvas id="minimap" width="174" height="174"></canvas><div class="minimap-ring"></div><div class="minimap-cursor" id="minimapCursor" aria-label="Kierunek patrzenia"><i></i></div><div class="minimap-north">N</div><div id="minimapBiome" class="minimap-biome">FOREST</div><div class="minimap-orbs"><div class="map-orb"><b id="miniHp">10♥</b><small>HP</small></div><div class="map-orb"><b id="miniNight">N1</b><small>NOC</small></div><div class="map-orb"><b id="miniLevel">L1</b><small>LVL</small></div></div><div class="armor-orbs" aria-label="Pancerz i zużycie"><div class="armor-orb" id="armorOrbHead"><b>⛑</b><small>GŁOWA</small><em>—</em></div><div class="armor-orb" id="armorOrbChest"><b>▣</b><small>TUŁÓW</small><em>—</em></div><div class="armor-orb" id="armorOrbLegs"><b>Ⅱ</b><small>NOGI</small><em>—</em></div><div class="armor-orb" id="armorOrbFeet"><b>⌑</b><small>STOPY</small><em>—</em></div></div></div>
+
+    <div id="message"></div>
+    <div id="crosshair"><i></i><i></i><i></i><i></i><div id="mineProgress"></div></div>
+    <canvas id="wolfAwareness" width="230" height="112" aria-label="Wskaźnik wykrycia przez wilki"></canvas>
+    <div id="mineHud" class="mine-hud"><div class="mine-hud-head"><span id="mineBlockName">BLOK</span><b id="minePercent">0%</b></div><div class="mine-bar"><i id="mineBarFill"></i></div></div>
+    <div id="worldMineBar" class="world-mine-bar hidden"><span id="worldMineName">KAMIEŃ</span><div><i id="worldMineFill"></i></div><b id="worldMinePct">0%</b></div>
+    <div id="weatherInfo"></div>
+    <div id="fortifyHud" class="fortify-hud hidden"><div class="fortify-top"><span id="fortifyName">KONSTRUKCJA</span><b id="fortifyHp">0 / 0</b></div><div class="fortify-bar"><i id="fortifyFill"></i></div><small id="fortifyNext">ŚPM: ulepsz</small></div>
+    <div id="enemyHud" class="enemy-hud hidden"><div class="enemy-hud-top"><span id="enemyName">WILK</span><b id="enemyHpText">30 / 30</b></div><div class="enemy-hp"><i id="enemyHpFill"></i></div></div>
+
+    <div class="survival-hud">
+      <div id="heartHud" class="heart-hud" aria-label="Punkty życia"></div>
+      <div class="survival-bars">
+        <div class="mini-stat hunger"><span>GŁÓD</span><div class="bar"><i id="hungerBar"></i></div><b id="hungerText">100</b></div>
+        <div class="mini-stat stamina"><span>STAMINA</span><div class="bar"><i id="staminaBar"></i></div><b id="staminaText">100</b></div>
+        <div class="mini-stat sanity"><span>STAN</span><div class="bar"><i id="sanityBar"></i></div><b id="sanityText">100</b></div>
+      </div>
+    </div>
+
+    <div id="hotbar"></div>
+    <div id="selectedLabel"></div>
+    <div id="debugPanel" class="hidden"></div>
+    <div id="nightWarning" class="hidden">NIE JESTEŚ SAM</div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
