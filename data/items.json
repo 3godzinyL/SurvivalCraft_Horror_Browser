@@ -549,5 +549,37 @@
   "campfire": {
     "place": 94,
     "kind": "camp"
+  },
+  "village_house_kit": {
+    "kind": "special",
+    "maxStack": 1
+  },
+  "village_wall_kit": {
+    "kind": "special",
+    "maxStack": 1
+  },
+  "village_forge_kit": {
+    "kind": "special",
+    "maxStack": 1
+  },
+  "village_farmer_kit": {
+    "kind": "special",
+    "maxStack": 1
+  },
+  "village_farm_kit": {
+    "kind": "special",
+    "maxStack": 1
+  },
+  "village_guard_kit": {
+    "kind": "special",
+    "maxStack": 1
+  },
+  "village_armory_kit": {
+    "kind": "special",
+    "maxStack": 1
+  },
+  "village_granary_kit": {
+    "kind": "special",
+    "maxStack": 1
   }
 }
